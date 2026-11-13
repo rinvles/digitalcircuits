@@ -4516,6 +4516,256 @@ Pages.comb=Qz.make({id:'comb',types:NAME,weights:W,gen,ctl:[{key:'n',label:'MUX 
 
 </script>
 <script>
+/* ---- Chapter 7: zamanlama diyagramları, gecikme, hazard ---- */
+(function(){
+'use strict';
+const rnd=(lo,hi)=>lo+Math.floor(Math.random()*(hi-lo+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(0,i);[a[i],a[j]]=[a[j],a[i]];}return a;};
+const VN=['A','B','C','D'];
+const NAME={wave:'Zamanlama diyagramı',delay:'Yayılım gecikmesi',path:'Kritik yol gecikmesi',htype:'Hazard türü',hexist:'Hazard var mı',hfix:'Hazard giderme'};
+const W={wave:1.2,delay:1.2,path:1,htype:1,hexist:1.2,hfix:1.5};
+/* ---- SOP cubes ---- */
+function parseSOP(str,n){
+  const vs=VN.slice(0,n),cubes=[];
+  const terms=String(str).replace(/[’‘`´]/g,"'").split('+').map(t=>t.trim()).filter(Boolean);
+  if(!terms.length)throw new Error('Boş ifade.');
+  terms.forEach(t=>{
+    let mask=0,val=0,i=0;const s=t.replace(/[\s·*&()]/g,'');
+    if(!s)throw new Error('Boş terim.');
+    while(i<s.length){
+      const ch=s[i].toUpperCase(),k=vs.indexOf(ch);
+      if(k<0)throw new Error("Bilinmeyen sembol: '"+s[i]+"'. Yalnızca "+vs.join(', ')+' ve + kullan.');
+      const neg=s[i+1]==="'";i+=neg?2:1;
+      const bit=1<<(n-1-k);
+      if(mask&bit)throw new Error('Terimde değişken tekrarı: '+ch);
+      mask|=bit;if(!neg)val|=bit;
+    }
+    cubes.push({mask,val});
+  });
+  return cubes;
+}
+const covers=(c,i)=>(i&c.mask)===c.val;
+const onset=(cubes,n)=>{const r=[];for(let i=0;i<(1<<n);i++)if(cubes.some(c=>covers(c,i)))r.push(i);return r;};
+function hazardPairs(cubes,n){
+  const on=new Set(onset(cubes,n)),out=[];
+  for(const i of on)for(let b=0;b<n;b++){const j=i^(1<<b);if(j>i&&on.has(j)&&!cubes.some(c=>covers(c,i)&&covers(c,j)))out.push([i,j,b]);}
+  return out;
+}
+const cubeStr=(c,n)=>{let s='';for(let k=0;k<n;k++){const bit=1<<(n-1-k);if(c.mask&bit)s+=VN[k]+((c.val&bit)?'':"'");}return s||'1';};
+const sopStr=(cubes,n)=>cubes.map(c=>cubeStr(c,n)).join(' + ');
+function randCubes(n,k){
+  const out=[],seen=new Set();let g=0;
+  while(out.length<k&&g++<60){
+    const nl=rnd(1,Math.min(3,n-1)),vars=shuf([...Array(n).keys()]).slice(0,nl);
+    let mask=0,val=0;vars.forEach(v=>{const bit=1<<(n-1-v);mask|=bit;if(Math.random()<.5)val|=bit;});
+    const key=mask+','+val;if(seen.has(key))continue;seen.add(key);out.push({mask,val});
+  }
+  return out;
+}
+/* ---- waveforms ---- */
+const LEN=10;
+function randWave(){let v=rnd(0,1),s='';for(let i=0;i<LEN;i++){if(i>0&&Math.random()<.35)v=1-v;s+=v;}return s;}
+const GATES=[
+  {e:'F = A · B',f:(a,b)=>a&b,n:2},{e:'F = A + B',f:(a,b)=>a|b,n:2},{e:'F = (A · B)\'  (NAND)',f:(a,b)=>1-(a&b),n:2},
+  {e:'F = (A + B)\'  (NOR)',f:(a,b)=>1-(a|b),n:2},{e:'F = A ⊕ B',f:(a,b)=>a^b,n:2}
+];
+function genWave(){
+  const t=pick([0,1,2]);
+  if(t<2){const g=pick(GATES),a=randWave(),b=randWave(),o=[...a].map((x,i)=>g.f(+x,+b[i])).join('');
+    return{type:'wave',task:'Gecikmeleri yok say. Girişlerin zamanlama diyagramı (her karakter bir zaman birimi, soldan sağa) verilmiş. F çıkışının dalga biçimini yaz.',stmt:`${g.e}\nA = ${a}\nB = ${b}`,
+      fields:[{k:'o',label:'F (10 bit)',ph:'10 bit'}],answer:{o},hints:['Her zaman biriminde A ve B değerlerine kapıyı uygula.','Sütun sütun ilerle: 1. birim, 2. birim, …'],
+      solution:['Her sütunda kapı fonksiyonunu uygula.',`F = ${o}`]};}
+  const a=randWave(),b=randWave(),c=randWave(),o=[...a].map((x,i)=>(+x&+b[i])|(1-+c[i])).join('');
+  return{type:'wave',task:'Gecikmeleri yok say. F çıkışının dalga biçimini yaz (her karakter bir zaman birimi).',stmt:`F = A·B + C'\nA = ${a}\nB = ${b}\nC = ${c}`,
+    fields:[{k:'o',label:'F (10 bit)',ph:'10 bit'}],answer:{o},hints:['Önce C\'yi bul, sonra A·B\'yi, sonra OR\'la.'],solution:[`F = ${o}`]};
+}
+function genDelay(){
+  const t=pick(['not','and']),d=rnd(1,3),a=randWave(),b=randWave();
+  const fa=t==='not'?(x=>1-x):null;
+  let o='';
+  if(t==='not'){const f0=1-+a[0];for(let i=0;i<LEN;i++)o+=i<d?f0:(1-+a[i-d]);}
+  else{const f0=+a[0]&+b[0];for(let i=0;i<LEN;i++)o+=i<d?f0:((+a[i-d])&(+b[i-d]));}
+  return{type:'delay',task:`Kapının yayılım gecikmesi ${d} zaman birimi: giriş değişince çıkış ${d} birim sonra değişir. Başlangıçta çıkış, t = 0'daki giriş değerlerine göre kararlıdır. Çıkışın dalga biçimini yaz.`,
+    stmt:t==='not'?`Z = A'  (NOT kapısı, tPD = ${d})\nA = ${a}`:`Z = A · B  (AND kapısı, tPD = ${d})\nA = ${a}\nB = ${b}`,
+    fields:[{k:'o',label:'Z (10 bit)',ph:'10 bit'}],answer:{o},
+    hints:[`Önce gecikmesiz çıkışı bul, sonra ${d} birim sağa kaydır.`,`İlk ${d} birimde çıkış, t=0 değerine karşılık gelen kararlı değerdedir.`],
+    solution:[`Gecikmesiz çıkış ${t==='not'?[...a].map(x=>1-+x).join(''):[...a].map((x,i)=>+x&+b[i]).join('')}.`,`${d} birim sağa kaydır, başa ilk değeri koy: ${o}.`]};
+}
+/* critical path on a random expression tree */
+const D={NOT:1,AND:2,OR:3,NAND:2,NOR:2};
+function randTree(d,vs){
+  if(d===0)return vs.pop();
+  const op=pick(['AND','OR','NAND','NOR','NOT']);
+  if(op==='NOT')return{op,ch:[randTree(d-1,vs)]};
+  return{op,ch:[randTree(d-1,vs),Math.random()<.5&&vs.length?vs.pop():randTree(d-1,vs)]};
+}
+const delayOf=t=>typeof t==='string'?0:D[t.op]+Math.max(...t.ch.map(delayOf));
+const treeStr=t=>typeof t==='string'?t:t.op==='NOT'?'NOT('+treeStr(t.ch[0])+')':t.op+'('+treeStr(t.ch[0])+', '+treeStr(t.ch[1])+')';
+function genPath(){
+  let t,tries=0;
+  do{const vs=shuf(['A','B','C','D','E','G','H','K']);t=randTree(rnd(2,3),vs);tries++;}while(tries<50&&(typeof t==='string'||treeStr(t).length>70));
+  const dd=D,ans=delayOf(t);
+  return{type:'path',task:'Devre aşağıdaki kapı ifadesiyle verilmiş (içten dışa). Girişlerden çıkışa en uzun yolun yayılım gecikmesini bul. Kapı gecikmeleri: '+Object.keys(dd).map(k=>`${k} = ${dd[k]} ns`).join(', ')+'.',
+    stmt:'F = '+treeStr(t),fields:[{k:'d',label:'Kritik yol gecikmesi (ns)',ph:'sayı'}],answer:{d:String(ans)},
+    hints:['Her girişten çıkışa giden yoldaki kapı gecikmelerini topla.','En içteki kapıdan en dıştaki kapıya kadar toplam; hangi kol daha uzunsa o belirler.'],
+    solution:['Her kolun gecikmesi = kapı gecikmesi + en uzun altkol gecikmesi (içten dışa).',`F = ${treeStr(t)} → en uzun yol ${ans} ns.`]};
+}
+const HT=[['Çıkış 1 kalması gerekirken kısa süre 0 olup tekrar 1 oluyor.','s1'],['Çıkış 0 kalması gerekirken kısa süre 1 olup tekrar 0 oluyor.','s0'],
+  ['Çıkış 0\'dan 1\'e geçerken 0 → 1 → 0 → 1 şeklinde üç kez değişiyor.','dyn'],['Çıkış 1\'den 0\'a geçerken 1 → 0 → 1 → 0 şeklinde üç kez değişiyor.','dyn'],
+  ['AND-OR (SOP) gerçeklemede, iki asal çarpanın geçiş yaptığı bir giriş değişiminde olabilecek hazard.','s1'],['OR-AND (POS) gerçeklemede olabilecek statik hazard.','s0']];
+function genHType(){
+  const [t,a]=pick(HT);
+  return{type:'htype',task:'Aşağıdaki durum hangi hazard türüdür?',stmt:t,fields:[{k:'h',label:'Tür',kind:'choice',opts:[['s0','Static 0'],['s1','Static 1'],['dyn','Dynamic']]}],answer:{h:a},
+    hints:['Static: çıkışın olması gerektiği değerde kalması gerekir. Dynamic: çıkış değişmesi gerekirken 3 ya da daha fazla kez değişir.','Static 1 SOP, Static 0 POS gerçeklemede görülür.'],
+    solution:['Static 1: 1 kalması gerekirken kısa süre 0.','Static 0: 0 kalması gerekirken kısa süre 1.','Dynamic: değişmesi gerekirken 3+ değişim.',`Cevap: ${{s0:'Static 0',s1:'Static 1',dyn:'Dynamic'}[a]}.`]};
+}
+function makeCover(){
+  const n=pick([3,3,4]);let cubes,hz;
+  for(let g=0;g<200;g++){cubes=randCubes(n,rnd(2,3));if(onset(cubes,n).length<2||onset(cubes,n).length===(1<<n))continue;hz=hazardPairs(cubes,n);return{n,cubes,hz};}
+  return{n:3,cubes:parseSOP("AB+B'C",3),hz:hazardPairs(parseSOP("AB+B'C",3),3)};
+}
+function genHExist(){
+  const m=makeCover(),n=m.n,vs=VN.slice(0,n).join(',');
+  const bits=m.hz.map(h=>h[2]);
+  return{type:'hexist',task:`F(${vs}) fonksiyonu aşağıdaki SOP (AND-OR) devresiyle gerçekleniyor. Tek bir girişin değiştiği ve çıkışın 1 kalması gereken bir geçişte static-1 hazard oluşabilir mi? Oluşabiliyorsa, hazard'a açık kaç bitişik minterm çifti (tek bit farkı) var?`,
+    stmt:`F = ${sopStr(m.cubes,n)}`,fields:[{k:'e',label:'Hazard olur mu?',kind:'choice',opts:[['1','Evet'],['0','Hayır']]},{k:'p',label:'Hazard\'a açık çift sayısı',ph:'sayı (yoksa 0)'}],
+    answer:{e:m.hz.length?'1':'0',p:String(m.hz.length)},
+    hints:['K-haritasında bitişik iki 1 hücresi aynı çarpım terimi (aynı grup) içinde değilse, o geçişte hazard olur.','Bitişik: tam bir değişken farkı (Gray komşuluğu). Çiftin ikisini de kapsayan tek bir terim var mı?'],
+    solution:['F\'nin 1 olduğu hücreleri bul: '+onset(m.cubes,n).join(', ')+'.',m.hz.length?`Tek terimle kapsanmayan bitişik çiftler: ${m.hz.map(h=>`(${h[0]},${h[1]})`).join(' ')}.`:'Tüm bitişik 1 çiftleri aynı terim tarafından kapsanıyor: hazard yok.']};
+}
+function genHFix(){
+  let m;for(let g=0;g<100;g++){m=makeCover();if(m.hz.length&&m.hz.length<=3)break;}
+  if(!m.hz.length)m={n:3,cubes:parseSOP("AB+B'C",3),hz:hazardPairs(parseSOP("AB+B'C",3),3)};
+  const n=m.n,vs=VN.slice(0,n).join(','),on=onset(m.cubes,n);
+  const fixed=m.cubes.slice();
+  m.hz.forEach(h=>{if(fixed.some(c=>covers(c,h[0])&&covers(c,h[1])))return;let c={mask:((1<<n)-1)&~(1<<h[2]),val:h[0]&~(1<<h[2])&((1<<n)-1)};
+    /* grow the cube while it stays inside the on-set */
+    for(let b=0;b<n;b++){if(!(c.mask&(1<<b)))continue;const nm=c.mask&~(1<<b),nv=c.val&nm;let ok=true;for(let i=0;i<(1<<n);i++)if((i&nm)===nv&&!on.includes(i)){ok=false;break;}if(ok){c={mask:nm,val:nv};}}
+    fixed.push(c);});
+  const ans=sopStr(fixed,n);
+  return{type:'hfix',task:`F(${vs}) fonksiyonunun SOP gerçeklemesinde static-1 hazard var. Fonksiyonu değiştirmeden, hazard'ı gideren tüm gerekli ek terimleri (consensus terimleri) ekleyerek hazard'sız SOP ifadesini yaz.`,
+    stmt:`F = ${sopStr(m.cubes,n)}`,fields:[{k:'f',label:'Hazard\'sız F',ph:"örn. AB + B'C + AC"}],answer:{f:ans},
+    check(a){
+      let cs;try{cs=parseSOP(a.f,n);}catch(e){return{ok:false,msgs:[{ok:false,t:e.message}],empty:!String(a.f||'').trim()};}
+      const o2=onset(cs,n),same=o2.length===on.length&&o2.every((x,i)=>x===on[i]);
+      if(!same)return{ok:false,msgs:[{ok:false,t:'İfade F ile aynı fonksiyonu vermiyor (minterm kümesi farklı).'}]};
+      const rem=hazardPairs(cs,n);
+      if(rem.length)return{ok:false,msgs:[{ok:false,t:`Fonksiyon doğru ama ${rem.length} bitişik çift hâlâ tek bir terimle kapsanmıyor.`}]};
+      return{ok:true,msgs:[{ok:true,t:'Hazard\'sız ve fonksiyon aynı.'}]};},
+    hints:['Hazard\'lı geçişte iki bitişik 1\'i birlikte kapsayan bir terim yok. O iki hücreyi kapsayan asal çarpan (consensus) terimi ekle.','Consensus: XY + X\'Z için YZ terimi. Fonksiyon değişmez, maliyet artar.'],
+    solution:['Tek terimle kapsanmayan bitişik 1 çiftlerini bul ve her birini kapsayan bir asal çarpan ekle.',`Hazard\'sız SOP: ${ans}`]};
+}
+const GEN={wave:genWave,delay:genDelay,path:genPath,htype:genHType,hexist:genHExist,hfix:genHFix};
+function gen(type){return GEN[type]();}
+if(typeof module!=='undefined'){module.exports={gen,NAME,W,parseSOP,hazardPairs,onset,sopStr,delayOf,treeStr};return;}
+Pages.hazard=Qz.make({id:'hazard',types:NAME,weights:W,gen});
+})();
+
+</script>
+<script>
+/* ---- Chapter 6: programlanabilir lojik cihazlar (PLA, PAL, GAL, CPLD, FPGA) ---- */
+(function(){
+'use strict';
+const rnd=(lo,hi)=>lo+Math.floor(Math.random()*(hi-lo+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(0,i);[a[i],a[j]]=[a[j],a[i]];}return a;};
+const VN=['A','B','C','D'];
+const NAME={pcount:'PLA bağlantı sayma',pread:'PLA tablosunu oku',pfit:'Cihaza sığar mı',ppal:'PAL / PLA bilgisi',pconcept:'PLD kavramları'};
+const W={pcount:1.4,pread:1.4,pfit:1.2,ppal:1,pconcept:1.2};
+const cubeStr=(c,n)=>{let s='';for(let k=0;k<n;k++){const b=1<<(n-1-k);if(c.mask&b)s+=VN[k]+((c.val&b)?'':"'");}return s;};
+const lits=c=>{let x=c.mask,k=0;while(x){k+=x&1;x>>=1;}return k;};
+function randProd(n){
+  const nl=rnd(1,Math.min(3,n)),vars=shuf([...Array(n).keys()]).slice(0,nl);let mask=0,val=0;
+  vars.forEach(v=>{const b=1<<(n-1-v);mask|=b;if(Math.random()<.5)val|=b;});return{mask,val};
+}
+function makeOutputs(n,m){
+  for(let g=0;g<200;g++){
+    const pool=[];const seen=new Set();
+    while(pool.length<rnd(3,5)){const c=randProd(n),k=c.mask+','+c.val;if(!seen.has(k)){seen.add(k);pool.push(c);}}
+    const outs=Array.from({length:m},()=>shuf(pool).slice(0,rnd(2,3)));
+    const used=new Set(outs.flat().map(c=>c.mask+','+c.val));
+    const shared=outs.flat().length>used.size;
+    if(shared&&used.size>=3)return{outs,pool:pool.filter(c=>used.has(c.mask+','+c.val))};
+  }
+  const a={mask:12,val:12},b={mask:6,val:2},c={mask:3,val:1};return{outs:[[a,b],[b,c]],pool:[a,b,c]};
+}
+const fname=(i)=>'F'+i;
+function genPCount(){
+  const n=pick([3,3,4]),m=pick([2,3]),{outs,pool}=makeOutputs(n,m);
+  const p=pool.length,andc=pool.reduce((s,c)=>s+lits(c),0),orc=outs.reduce((s,o)=>s+o.length,0);
+  return{type:'pcount',task:`Aşağıdaki ${m} çıkışlı fonksiyonlar bir ${n}×${m} PLA ile gerçekleştirilecek. Ortak çarpım terimleri paylaşılır. Gereken çarpım terimi (AND kapısı) sayısını, programlamada AND dizisinde ve OR dizisinde bırakılan bağlantı (X) sayılarını bul. (AND dizisinde bir terimin her literal'i bir bağlantıdır; OR dizisinde bir terimin her çıkışta kullanımı bir bağlantıdır.)`,
+    stmt:outs.map((o,i)=>`${fname(i)} = ${o.map(c=>cubeStr(c,n)).join(' + ')}`).join('\n'),
+    fields:[{k:'p',label:'AND kapısı (çarpım) sayısı',ph:'sayı'},{k:'a',label:'AND dizisi bağlantı sayısı',ph:'sayı'},{k:'o',label:'OR dizisi bağlantı sayısı',ph:'sayı'}],
+    answer:{p:String(p),a:String(andc),o:String(orc)},
+    hints:['Aynı çarpım terimi birden çok çıkışta geçiyorsa PLA\'da tek AND kapısı yeterlidir.','AND dizisi: her ayrı terimdeki literal sayısının toplamı (A ve A\' ayrı bağlantılardır).','OR dizisi: her çıkış için, o çıkışın içerdiği terimlerin sayısı; hepsini topla.'],
+    solution:[`Ayrı terimler: ${pool.map(c=>cubeStr(c,n)).join(', ')} → ${p} AND kapısı.`,`AND dizisi: ${pool.map(c=>lits(c)).join(' + ')} = ${andc}.`,`OR dizisi: ${outs.map(o=>o.length).join(' + ')} = ${orc}.`]};
+}
+function genPRead(){
+  const n=3,m=2,{outs,pool}=makeOutputs(n,m);
+  const hdr=`  ${VN.slice(0,n).join(' ')}   ${outs.map((_,i)=>fname(i)).join(' ')}`;
+  const rows=pool.map((c,i)=>{const pat=VN.slice(0,n).map((_,k)=>{const b=1<<(n-1-k);return c.mask&b?((c.val&b)?'1':'0'):'-';}).join(' ');
+    const o=outs.map(x=>x.some(y=>y.mask===c.mask&&y.val===c.val)?'X':'.').join(' ');return`P${i+1}  ${pat}   ${o}`;});
+  const on=(cs)=>{const r=[];for(let i=0;i<(1<<n);i++)if(cs.some(c=>(i&c.mask)===c.val))r.push(i);return r;};
+  const parse=(s)=>{const vs=VN.slice(0,n),cs=[];String(s).replace(/[’‘`´]/g,"'").split('+').map(t=>t.trim()).filter(Boolean).forEach(t=>{let mask=0,val=0;const z=t.replace(/[\s·*]/g,'');for(let i=0;i<z.length;){const k=vs.indexOf(z[i].toUpperCase());if(k<0)throw new Error("Bilinmeyen sembol '"+z[i]+"'.");const neg=z[i+1]==="'";i+=neg?2:1;const b=1<<(n-1-k);mask|=b;if(!neg)val|=b;}cs.push({mask,val});});if(!cs.length)throw new Error('Boş ifade.');return cs;};
+  const same=(a,b)=>a.length===b.length&&a.every((x,i)=>x===b[i]);
+  return{type:'pread',task:'Bir 3×2 PLA aşağıdaki gibi programlanmış. Satırlar çarpım terimleri: giriş sütunlarında 1 (değişken), 0 (tümleyeni), - (kullanılmıyor); çıkış sütunlarında X, o terimin o çıkışın OR\'una bağlı olduğunu gösterir. F0 ve F1 fonksiyonlarını SOP olarak yaz.',
+    stmt:hdr+'\n'+rows.join('\n'),
+    fields:[{k:'f0',label:'F0',ph:"örn. AB + B'C"},{k:'f1',label:'F1',ph:'SOP'}],
+    answer:{f0:outs[0].map(c=>cubeStr(c,n)).join(' + '),f1:outs[1].map(c=>cubeStr(c,n)).join(' + ')},
+    check(a){
+      const msgs=[];let ok=true,empty=true;
+      [['f0',0],['f1',1]].forEach(([k,i])=>{
+        if(String(a[k]||'').trim())empty=false;
+        try{const g=same(on(parse(a[k])),on(outs[i]));if(!g)ok=false;msgs.push({ok:g,t:`F${i}: ${g?'doğru.':'yanlış (farklı fonksiyon).'}`});}
+        catch(e){ok=false;msgs.push({ok:false,t:`F${i}: ${e.message}`});}
+      });
+      return{ok,msgs,empty};},
+    hints:['Her çıkış için X işaretli satırların çarpım terimlerini topla (OR).','Satırdaki 1 → değişken, 0 → tümleyen, - → o değişken yok.'],
+    solution:outs.map((o,i)=>`F${i} = ${o.map(c=>cubeStr(c,n)).join(' + ')}`)};
+}
+function genPFit(){
+  const pal=Math.random()<.5,n=pick([3,4]),m=pick([2,3]);
+  const {outs,pool}=makeOutputs(n,m);
+  if(pal){const cap=rnd(2,3),need=Math.max(...outs.map(o=>o.length)),fits=need<=cap;
+    return{type:'pfit',task:`Bir PAL'de her çıkışın OR kapısı sabit olarak ${cap} girişli ve çarpım terimleri çıkışlar arasında paylaşılamaz (her çıkışın kendi AND kapıları vardır). Aşağıdaki fonksiyonlar bu PAL ile gerçeklenebilir mi?`,stmt:outs.map((o,i)=>`${fname(i)} = ${o.map(c=>cubeStr(c,n)).join(' + ')}`).join('\n'),
+      fields:[{k:'f',label:'Gerçeklenebilir mi?',kind:'choice',opts:[['1','Evet'],['0','Hayır']]}],answer:{f:fits?'1':'0'},
+      hints:['PAL\'da OR dizisi sabit: bir çıkışa en fazla OR giriş sayısı kadar çarpım terimi bağlanır.','Her çıkışın terim sayısına bak, en büyüğünü OR girişi ile karşılaştır.'],
+      solution:['Her çıkışın terim sayıları: '+outs.map(o=>o.length).join(', ')+'.',`OR kapısı ${cap} girişli → ${fits?'hepsi sığar':'en az bir çıkış sığmaz'}.`]};}
+  const cap=rnd(pool.length-1,pool.length+1),fits=pool.length<=cap;
+  return{type:'pfit',task:`${n}×${m} bir PLA'da en fazla ${cap} çarpım terimi (AND kapısı) var. Çarpım terimleri çıkışlar arasında paylaşılabilir. Aşağıdaki fonksiyonlar bu PLA ile gerçeklenebilir mi?`,stmt:outs.map((o,i)=>`${fname(i)} = ${o.map(c=>cubeStr(c,n)).join(' + ')}`).join('\n'),
+    fields:[{k:'f',label:'Gerçeklenebilir mi?',kind:'choice',opts:[['1','Evet'],['0','Hayır']]}],answer:{f:fits?'1':'0'},
+    hints:['PLA\'da hem AND hem OR dizisi programlanır; ortak terimler tek AND kapısı kullanır.','Ayrı çarpım terimlerinin sayısını bul.'],
+    solution:[`Ayrı terimler: ${pool.map(c=>cubeStr(c,n)).join(', ')} → ${pool.length} adet.`,`Sınır ${cap} → ${fits?'sığar':'sığmaz'}.`]};
+}
+const PAL=[
+  ['PAL16L8 adındaki 16 sayısı, en fazla kaç giriş değişkeni olduğunu gösterir. En fazla kaç giriş vardır?','16'],
+  ['PAL16L8\'de kaç çıkış vardır?','8'],
+  ['PAL16L8\'de toplam kaç AND (çarpım) kapısı vardır?','64'],
+  ['PAL16L8\'de her çıkışa ait kaç AND kapısı vardır? (7\'si OR\'a, biri çıkış-etkinleştirme kapısıdır.)','8'],
+  ['PAL16L8\'de sabit OR kapısı kaç girişlidir?','7'],
+  ['PAL16L8\'de bir AND kapısının kaç girişi vardır? (16 giriş değişkeni ve tümleyenleri)','32'],
+  ['82S100 PLA\'sında kaç giriş vardır?','16'],['82S100 PLA\'sında kaç çıkış vardır?','8'],['82S100 PLA\'sında kaç çarpım terimi (AND) vardır?','48']
+];
+function genPPal(){const [t,a]=pick(PAL);return{type:'ppal',task:t,stmt:'',fields:[{k:'n',label:'Cevap',ph:'sayı'}],answer:{n:a},hints:['Slayttaki PAL16L8 ve 82S100 örneklerine bak.'],solution:[`Cevap: ${a}.`]};}
+const MC=[
+  ['PLA\'da hangi diziler programlanabilir?',[['both','AND ve OR dizisi'],['and','Yalnızca AND dizisi'],['or','Yalnızca OR dizisi']],'both'],
+  ['PAL\'da hangi diziler programlanabilir?',[['both','AND ve OR dizisi'],['and','Yalnızca AND dizisi (OR sabit)'],['or','Yalnızca OR dizisi']],'and'],
+  ['Hangisi tek seferlik programlanabilir (OTP) eski cihazlardandır?',[['pal','PAL / PLA (sigortalı)'],['fpga','FPGA'],['gal','GAL']],'pal'],
+  ['GAL cihazının PAL\'dan farkı nedir?',[['erase','CMOS yapılı, silinip tekrar programlanabilir'],['otp','Yalnızca bir kez programlanabilir'],['or','OR dizisi programlanabilir']],'erase'],
+  ['Birden çok PLD\'nin (macrocell) bir ara bağlantı ağıyla birleştiği cihaz hangisidir?',[['cpld','CPLD'],['pal','PAL'],['pla','PLA']],'cpld'],
+  ['PAL16L8 adındaki "L" harfi ne anlama gelir?',[['low','Çıkış tipi aktif düşük'],['logic','Lojik cihaz'],['latch','Latch içerir']],'low'],
+  ['Hangisi donanım tanımlama dilidir?',[['vhdl','VHDL'],['c','C'],['py','Python']],'vhdl']
+];
+function genPConcept(){const [t,o,a]=pick(MC);const txt=o.find(x=>x[0]===a)[1];return{type:'pconcept',task:t,stmt:'',fields:[{k:'c',label:'Cevap',kind:'choice',opts:shuf(o)}],answer:{c:a},hints:['Slayt: PLA\'da AND ve OR programlanabilir; PAL\'da OR dizisi sabittir.'],solution:[`Doğru cevap: ${txt}.`]};}
+const GEN={pcount:genPCount,pread:genPRead,pfit:genPFit,ppal:genPPal,pconcept:genPConcept};
+function gen(type){return GEN[type]();}
+if(typeof module!=='undefined'){module.exports={gen,NAME,W,cubeStr,lits};return;}
+Pages.pld=Qz.make({id:'pld',types:NAME,weights:W,gen});
+})();
+
+</script>
+<script>
 Core.boot();
 
 </script>
