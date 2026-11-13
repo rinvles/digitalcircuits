@@ -52,6 +52,10 @@ h1{margin:0;font-family:var(--f-display);font-weight:800;font-size:clamp(1.7rem,
 /* main navigation: one pill per topic, tinted by that topic's own accent */
 .mainnav{display:flex;flex-wrap:wrap;gap:8px}
 .mn{border:2px solid var(--line);background:var(--surface);border-radius:12px;padding:9px 16px;font-family:var(--f-display);font-weight:700;font-size:1rem;cursor:pointer;color:var(--muted)}
+.secnav{display:flex;gap:6px;margin:0 0 10px;padding:4px;background:var(--surface2);border-radius:14px;width:max-content;max-width:100%;overflow-x:auto}
+.sn{border:0;background:transparent;border-radius:10px;padding:7px 14px;font-family:var(--f-display);font-weight:800;font-size:.92rem;cursor:pointer;color:var(--muted);white-space:nowrap}
+.sn:hover{color:var(--ink)}
+.sn[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
 .mn:hover{border-color:var(--accent);color:var(--ink)}
 .mn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .page[hidden]{display:none}
@@ -184,14 +188,46 @@ table.pic{border-collapse:collapse;width:100%;font-size:.9rem}
 body[data-g="alg"]{--bg:#F4F1FC;--grid:#E7E1F6;--surface2:#ECE6FA;--line:#D6CDEE;--accent:#6A3FD6;--accent-ink:#FFFFFF;--accent-soft:#E5DCFB;}
 body[data-g="gates"]{--bg:#EDF4F3;--grid:#DCEAE8;--surface2:#E0EEEC;--line:#C5DAD6;--accent:#0A7A69;--accent-ink:#FFFFFF;--accent-soft:#CDEBE4;}
 body[data-g="num"]{--bg:#F5F5F8;--grid:#E7E7EE;--surface2:#EDEDF3;--line:#D9D9E4;--accent:#D1440E;--accent-ink:#FFFFFF;--accent-soft:#FCE0D4;}
+body[data-g="b5"]{--bg:#EEF3FB;--grid:#DCE6F6;--surface2:#E2EBFA;--line:#C8D7F0;--accent:#1F5FD1;--accent-ink:#FFFFFF;--accent-soft:#D7E4FB;}
+body[data-g="b7"]{--bg:#FBF5EA;--grid:#F3E8D2;--surface2:#F6ECD9;--line:#E6D5B5;--accent:#B26A00;--accent-ink:#FFFFFF;--accent-soft:#FBE6BF;}
+body[data-g="b8"]{--bg:#FBEFF3;--grid:#F5DDE6;--surface2:#F7E3EA;--line:#EBC9D6;--accent:#C21E5A;--accent-ink:#FFFFFF;--accent-soft:#FADAE6;}
+body[data-g="b11"]{--bg:#EFF6EC;--grid:#DFEDD9;--surface2:#E3F0DD;--line:#CDE2C4;--accent:#2F7D12;--accent-ink:#FFFFFF;--accent-soft:#D7EDC9;}
 @media (prefers-color-scheme: dark){
 :root:not([data-theme="light"]) body[data-g="alg"]{--bg:#130E25;--grid:#190F30;--surface:#1B1434;--surface2:#251B46;--line:#352A5E;--accent:#AA8CFF;--accent-ink:#130E25;--accent-soft:#2C2052;}
 :root:not([data-theme="light"]) body[data-g="gates"]{--bg:#08171A;--grid:#0C1F22;--surface:#102429;--surface2:#17323A;--line:#244650;--accent:#4DD6BE;--accent-ink:#08171A;--accent-soft:#123B3B;}
 :root:not([data-theme="light"]) body[data-g="num"]{--bg:#121215;--grid:#1A1A1F;--surface:#1B1B21;--surface2:#25252D;--line:#34343F;--accent:#FF8D5E;--accent-ink:#121215;--accent-soft:#43241A;}
+:root:not([data-theme="light"]) body[data-g="b5"]{--bg:#0A1224;--grid:#0F1A33;--surface:#101C36;--surface2:#17274A;--line:#243A66;--accent:#7FA8FF;--accent-ink:#0A1224;--accent-soft:#172B55;}
+:root:not([data-theme="light"]) body[data-g="b7"]{--bg:#1A1307;--grid:#231A0A;--surface:#241B0C;--surface2:#322510;--line:#4A3718;--accent:#FFB43C;--accent-ink:#1A1307;--accent-soft:#47320F;}
+:root:not([data-theme="light"]) body[data-g="b8"]{--bg:#1C0A12;--grid:#26101A;--surface:#26101A;--surface2:#361828;--line:#552A40;--accent:#FF7AA8;--accent-ink:#1C0A12;--accent-soft:#4A1830;}
+:root:not([data-theme="light"]) body[data-g="b11"]{--bg:#0B1707;--grid:#112209;--surface:#122309;--surface2:#1B3310;--line:#2D4D1C;--accent:#8BE05C;--accent-ink:#0B1707;--accent-soft:#21400F;}
 }
 :root[data-theme="dark"] body[data-g="alg"]{--bg:#130E25;--grid:#190F30;--surface:#1B1434;--surface2:#251B46;--line:#352A5E;--accent:#AA8CFF;--accent-ink:#130E25;--accent-soft:#2C2052;}
 :root[data-theme="dark"] body[data-g="gates"]{--bg:#08171A;--grid:#0C1F22;--surface:#102429;--surface2:#17323A;--line:#244650;--accent:#4DD6BE;--accent-ink:#08171A;--accent-soft:#123B3B;}
 :root[data-theme="dark"] body[data-g="num"]{--bg:#121215;--grid:#1A1A1F;--surface:#1B1B21;--surface2:#25252D;--line:#34343F;--accent:#FF8D5E;--accent-ink:#121215;--accent-soft:#43241A;}
+:root[data-theme="dark"] body[data-g="b5"]{--bg:#0A1224;--grid:#0F1A33;--surface:#101C36;--surface2:#17274A;--line:#243A66;--accent:#7FA8FF;--accent-ink:#0A1224;--accent-soft:#172B55;}
+:root[data-theme="dark"] body[data-g="b7"]{--bg:#1A1307;--grid:#231A0A;--surface:#241B0C;--surface2:#322510;--line:#4A3718;--accent:#FFB43C;--accent-ink:#1A1307;--accent-soft:#47320F;}
+:root[data-theme="dark"] body[data-g="b8"]{--bg:#1C0A12;--grid:#26101A;--surface:#26101A;--surface2:#361828;--line:#552A40;--accent:#FF7AA8;--accent-ink:#1C0A12;--accent-soft:#4A1830;}
+:root[data-theme="dark"] body[data-g="b11"]{--bg:#0B1707;--grid:#112209;--surface:#122309;--surface2:#1B3310;--line:#2D4D1C;--accent:#8BE05C;--accent-ink:#0B1707;--accent-soft:#21400F;}
+</style>
+<style>
+.qz-fn{white-space:pre-wrap;overflow-wrap:anywhere;font-size:clamp(1rem,3.2vw,1.3rem);font-weight:600;line-height:1.5}
+.qz-fields{display:flex;flex-wrap:wrap;gap:14px 18px;margin:12px 0}
+.qz-f{display:flex;flex-direction:column;gap:5px;min-width:0}
+.qz-f label,.qz-f .lab{font-size:.85rem;color:var(--muted);font-weight:600}
+.qz-in{font:inherit;font-family:var(--f-mono);font-size:1.05rem;padding:9px 12px;border:2px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);width:min(100%,260px);box-sizing:border-box}
+.qz-in:focus-visible{outline:3px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.qz-sol{margin:10px 0;padding:10px 14px;background:var(--accent-soft);border-radius:12px}
+.qz-sol ol{margin:6px 0 0;padding-left:20px}
+.qz-tbl{border-collapse:collapse;margin:8px 0;font-family:var(--f-mono)}
+.qz-tbl th,.qz-tbl td{border:2px solid var(--line);padding:3px 12px;text-align:center}
+.qz-tbl th{background:var(--surface2)}
+.qz-tbl td.o,.qz-tbl th.o{background:var(--accent-soft);font-weight:700}
+.qz-svg{display:block;max-width:100%;height:auto;margin:8px 0;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.qz-svg .ln{stroke:var(--ink);stroke-width:2;fill:none}
+.qz-svg .bx{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2.5}
+.qz-svg text{font:600 13px var(--f-mono);fill:var(--ink)}
+.qz-svg .mu{fill:var(--muted);font-weight:500}
+
 </style>
 <style>
 .pic .sw{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:middle}
@@ -468,6 +504,7 @@ button.num-b.sc[aria-checked="true"]{background:var(--accent-soft);color:var(--i
     </div>
     <div class="stats" id="stats" aria-label="İstatistikler"></div>
   </header>
+  <nav class="secnav" id="secnav" aria-label="Bölümler" hidden></nav>
   <nav class="mainnav" id="mainnav" aria-label="Ana sayfalar"></nav>
   <nav class="tabs" id="subnav" role="tablist" aria-label="Alt sayfalar" hidden></nav>
   <main id="pages"></main>
@@ -855,19 +892,29 @@ Core.render=function(c,html){
 };
 
 /* ---------- routing ---------- */
+const SECS=[{id:'c14',label:'Chapter 1-4'},{id:'v1',label:'Vize 1'},{id:'fin',label:'Final'}];
 const GROUPS=[
-  {id:'k',label:'Karnaugh',pages:[['kmap','Karnaugh haritası'],['qm','Quine-McCluskey']]},
-  {id:'alg',label:'Minterm / Maxterm',pages:[['canon','Kanonik formlar'],['simp','Sadeleştirme']]},
-  {id:'gates',label:'Logic Gates',pages:[['gates','Devre kurma'],['nandnor','NAND / NOR']]},
-  {id:'num',label:'Sayılar',pages:[['num','Toplama ve çıkarma']]}
+  {sec:'c14',id:'k',label:'Karnaugh',pages:[['kmap','Karnaugh haritası'],['qm','Quine-McCluskey']]},
+  {sec:'c14',id:'alg',label:'Minterm / Maxterm',pages:[['canon','Kanonik formlar'],['simp','Sadeleştirme']]},
+  {sec:'c14',id:'gates',label:'Logic Gates',pages:[['gates','Devre kurma'],['nandnor','NAND / NOR']]},
+  {sec:'c14',id:'num',label:'Sayılar',pages:[['num','Toplama ve çıkarma']]},
+  {sec:'v1',id:'b5',label:'Ch5 Yapı taşları',pages:[['comb','Toplayıcı / MUX']]},
+  {sec:'v1',id:'b7',label:'Ch6-7 PLD ve zamanlama',pages:[['hazard','Timing / Hazard'],['pld','PLA / PAL']]},
+  {sec:'v1',id:'b8',label:'Ch8-10 Sıralı devreler',pages:[['seqa','Latch / Flip-flop'],['seqb','Analiz / Tasarım']]},
+  {sec:'v1',id:'b11',label:'Ch11 TTL',pages:[['ttl','TTL hesapları']]}
 ];
 const lastInGroup={};
+const lastInSec={};
+function secsWithGroups(){return SECS.filter(s=>GROUPS.some(g=>g.sec===s.id));}
 let current=null;
 const mounted={};
 function groupOf(id){return GROUPS.find(g=>g.pages.some(p=>p[0]===id));}
 function renderNav(){
   const g=groupOf(current);
-  $('#mainnav').innerHTML=GROUPS.map(x=>`<button type="button" class="mn" data-g="${x.id}" aria-pressed="${x.id===g.id}">${x.label}</button>`).join('');
+  const ss=secsWithGroups(),sn=$('#secnav');
+  if(ss.length>1){sn.hidden=false;sn.innerHTML=ss.map(s=>`<button type="button" class="sn" data-s="${s.id}" aria-pressed="${s.id===g.sec}">${s.label}</button>`).join('');}
+  else{sn.hidden=true;sn.innerHTML='';}
+  $('#mainnav').innerHTML=GROUPS.filter(x=>x.sec===g.sec).map(x=>`<button type="button" class="mn" data-g="${x.id}" aria-pressed="${x.id===g.id}">${x.label}</button>`).join('');
   const sub=$('#subnav');
   if(g.pages.length>1){
     sub.hidden=false;
@@ -877,7 +924,7 @@ function renderNav(){
 Core.go=function(id){
   const g=groupOf(id);if(!g)id='kmap';
   const grp=groupOf(id);
-  current=id;lastInGroup[grp.id]=id;
+  current=id;lastInGroup[grp.id]=id;lastInSec[grp.sec]=id;
   document.body.setAttribute('data-g',grp.id);
   document.querySelectorAll('.page').forEach(el=>{el.hidden=el.id!=='pg-'+id;});
   const el=$('#pg-'+id);
@@ -894,6 +941,8 @@ Core.go=function(id){
 };
 
 document.addEventListener('click',e=>{
+  const sb=e.target.closest('#secnav [data-s]');
+  if(sb){const s=sb.dataset.s;Core.go(lastInSec[s]||GROUPS.find(x=>x.sec===s).pages[0][0]);return;}
   const mn=e.target.closest('[data-g].mn');
   if(mn){const g=GROUPS.find(x=>x.id===mn.dataset.g);Core.go(lastInGroup[g.id]||g.pages[0][0]);return;}
   const tab=e.target.closest('#subnav [data-p]');
@@ -902,6 +951,8 @@ document.addEventListener('click',e=>{
 window.addEventListener('hashchange',()=>{const h=location.hash.replace('#','');if(h&&h!==current&&groupOf(h))Core.go(h);});
 
 Core.boot=function(){
+  /* hide pages whose module is not part of this build */
+  for(let i=GROUPS.length-1;i>=0;i--){GROUPS[i].pages=GROUPS[i].pages.filter(p=>window.Pages&&window.Pages[p[0]]);if(!GROUPS[i].pages.length)GROUPS.splice(i,1);}
   const host=$('#pages');
   GROUPS.forEach(g=>g.pages.forEach(p=>{
     const s=document.createElement('section');
@@ -936,6 +987,110 @@ const Chart={
     <div class="row"><button type="button" class="btn primary" data-act="cCheck"${sel.size&&!done?'':' disabled'}>Kapağı kontrol et</button><button type="button" class="btn" data-act="cHint"${done?' disabled':''}>İpucu</button><button type="button" class="btn ghost" data-act="cReveal"${done?' disabled':''}>Çözümü göster</button></div>`;
   }
 };
+
+</script>
+<script>
+/* ---- Qz: shared question-page framework for the chapter 5+ pages ----
+   Qz.make(cfg) returns a page object ({mount}) that renders generated questions.
+   cfg: {id, types:{key:name}, weights:{key:w}, ctl:[{key,label,opts:[[v,text]],def}], gen(type,ctl)->q}
+   q: {type, task, stmt, html?, fields:[{k,label,kind:'text'|'choice',opts?,ph?}], answer:{k:string},
+       check?(a)->{ok,msgs:[{ok,t}],empty?}, hints:[string], solution:[string]}
+   Answer strings are compared after Qz.norm unless q.check is given. */
+const Qz=(function(){
+const {esc,fb,fbHTML,render}=Core;
+const norm=s=>String(s==null?'':s).replace(/[\s,;]+/g,'').replace(/[’‘`´]/g,"'").toLowerCase();
+const rnd=(lo,hi)=>lo+Math.floor(Math.random()*(hi-lo+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(0,i);[a[i],a[j]]=[a[j],a[i]];}return a;};
+function pickType(types,weights,last){
+  const ts=Object.keys(types).filter(t=>t!==last);let tot=0;ts.forEach(t=>tot+=(weights&&weights[t])||1);
+  let r=Math.random()*tot;for(const t of ts){r-=(weights&&weights[t])||1;if(r<=0)return t;}return ts[0];
+}
+function defCheck(q,a){
+  const msgs=[];let ok=true,empty=true;
+  q.fields.forEach(f=>{
+    const got=a[f.k];if(got!=null&&String(got).trim()!=='')empty=false;
+    const n=f.norm||norm;
+    const good=n(got)===n(q.answer[f.k]);
+    if(!good)ok=false;
+    msgs.push({ok:good,t:f.label+(good?': doğru.':': yanlış ya da boş.')});
+  });
+  return{ok,msgs,empty};
+}
+function make(cfg){
+  const T=Core.timer();
+  let root=null;
+  const S={q:null,qno:0,last:null,a:{},fb:null,phase:'ask',hint:0,hintShown:[],ctl:{}};
+  (cfg.ctl||[]).forEach(c=>{S.ctl[c.key]=c.def;});
+  (window.__qz=window.__qz||{})[cfg.id]=S;
+  function newQ(){
+    const type=pickType(cfg.types,cfg.weights,S.last);
+    let q=null;for(let i=0;i<20&&!q;i++){try{q=cfg.gen(type,S.ctl);}catch(e){q=null;}}
+    if(!q)throw new Error('gen failed '+type);
+    S.q=q;S.last=type;S.qno++;S.a={};S.fb=null;S.phase='ask';S.hint=0;S.hintShown=[];
+    q.fields.forEach(f=>{S.a[f.k]='';});
+    T.start();
+  }
+  function fieldHTML(f,done){
+    if(f.kind==='choice'){
+      return`<div class="ctl qz-f"><span class="lab">${esc(f.label)}</span><div class="seg" role="group" aria-label="${esc(f.label)}">${f.opts.map(o=>`<button type="button" data-act="ch" data-k="${f.k}" data-v="${esc(o[0])}" data-fk="c-${f.k}-${esc(o[0])}" aria-pressed="${S.a[f.k]===String(o[0])}"${done?' disabled':''}>${esc(o[1])}</button>`).join('')}</div></div>`;
+    }
+    return`<div class="qz-f"><label for="qz-${f.k}">${esc(f.label)}</label><input id="qz-${f.k}" class="qz-in" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${esc(f.ph||'')}" value="${esc(S.a[f.k])}" data-in="${f.k}" data-fk="in-${f.k}"${done?' disabled':''}></div>`;
+  }
+  function draw(){
+    const q=S.q,done=S.phase!=='ask';
+    const ctl=(cfg.ctl||[]).length?`<div class="controls">${cfg.ctl.map(c=>`<div class="ctl"><span class="lab">${esc(c.label)}</span><div class="seg" role="group" aria-label="${esc(c.label)}">${c.opts.map(o=>`<button type="button" data-act="ctl" data-c="${c.key}" data-v="${esc(o[0])}" data-fk="ctl-${c.key}-${esc(o[0])}" aria-pressed="${String(S.ctl[c.key])===String(o[0])}">${esc(o[1])}</button>`).join('')}</div></div>`).join('')}</div>`:'';
+    const hs=q.hints||[];
+    const hintBox=S.hintShown.length?`<div class="fb info"><strong>İpucu</strong>${S.hintShown.map((t,i)=>`<p>${i+1}. ${esc(t)}</p>`).join('')}</div>`:'';
+    const sol=S.phase==='rev'?`<div class="qz-sol"><strong>Çözüm</strong><ol>${(q.solution||[]).map(l=>`<li>${esc(l).replace(/`([^`]+)`/g,'<code>$1</code>')}</li>`).join('')}</ol></div>`:'';
+    render(root,ctl+`<div class="card qz-card">
+      <div class="qhead"><span class="qno">Soru ${S.qno} · ${esc(cfg.types[q.type])}</span>${T.html()}</div>
+      <p class="task">${esc(q.task)}</p>
+      ${q.stmt?`<div class="fn qz-fn">${esc(q.stmt)}</div>`:''}
+      ${q.html||''}
+      <div class="qz-fields">${q.fields.map(f=>fieldHTML(f,done)).join('')}</div>
+      ${hintBox}<div aria-live="polite">${fbHTML(S.fb)}</div>${sol}
+      <div class="row">
+        <button type="button" class="btn primary" data-act="check"${done?' disabled':''}>Kontrol et</button>
+        <button type="button" class="btn" data-act="hint"${done||S.hint>=hs.length?' disabled':''}>İpucu${hs.length&&!done?` (${S.hint}/${hs.length})`:''}</button>
+        <button type="button" class="btn ghost" data-act="reveal"${done?' disabled':''}>Çözümü göster</button>
+        <button type="button" class="btn${done?' primary':' ghost'}" data-act="next" data-fk="next">${done?'Sonraki soru':'Yeni soru (atla)'}</button>
+      </div>
+    </div>`);
+  }
+  function doCheck(){
+    if(S.phase!=='ask')return;
+    const q=S.q,r=(q.check||((a)=>defCheck(q,a)))(S.a);
+    if(r.empty){S.fb=fb('warn','Eksik cevap','Önce cevap alanlarını doldur.');draw();return;}
+    if(r.ok){S.phase='done';T.stop();Core.credit(T.elapsed());S.fb=fb('ok','Doğru',r.msgs.map(m=>esc(m.t)).join('<br>')+'<br>Süre '+Core.fmtTime(T.elapsed())+'.');}
+    else S.fb=fb('bad','Henüz değil',r.msgs.map(m=>(m.ok?'Doğru: ':'')+esc(m.t)).join('<br>'));
+    draw();
+  }
+  function doHint(){if(S.phase!=='ask')return;const hs=S.q.hints||[];if(S.hint>=hs.length)return;S.hintShown.push(hs[S.hint]);S.hint++;draw();}
+  function doReveal(){
+    if(S.phase!=='ask')return;
+    S.a=Object.assign({},S.q.answer);S.phase='rev';T.stop();Core.breakStreak();
+    S.fb=fb('info','Çözüm gösterildi','Bu soru için puan yok. Adımları kendi çözümünle karşılaştır.');draw();
+  }
+  return{
+    mount(el){
+      root=el;
+      root.addEventListener('click',e=>{
+        const t=e.target.closest('[data-act]');if(!t||!root.contains(t))return;
+        const act=t.dataset.act;
+        if(act==='check')doCheck();else if(act==='hint')doHint();else if(act==='reveal')doReveal();
+        else if(act==='next'){newQ();draw();}
+        else if(act==='ch'){if(S.phase==='ask'){S.a[t.dataset.k]=t.dataset.v;draw();}}
+        else if(act==='ctl'){let v=t.dataset.v;if(/^-?\d+$/.test(v))v=Number(v);S.ctl[t.dataset.c]=v;S.last=null;newQ();draw();}
+      });
+      root.addEventListener('input',e=>{const k=e.target.dataset&&e.target.dataset.in;if(k)S.a[k]=e.target.value;});
+      root.addEventListener('keydown',e=>{const k=e.target.dataset&&e.target.dataset.in;if(k&&e.key==='Enter'){e.preventDefault();S.a[k]=e.target.value;doCheck();}});
+      newQ();draw();
+    }
+  };
+}
+return{make,norm,rnd,pick,shuf,defCheck};
+})();
 
 </script>
 <script>
@@ -4220,6 +4375,143 @@ function mountEvents(){
 Pages.num={
   mount(el){root=el;mountEvents();newQuestion();draw();}
 };
+})();
+
+</script>
+<script>
+/* ---- Chapter 5: toplayıcılar, çıkarıcı, çoğullayıcı (MUX) ---- */
+(function(){
+'use strict';
+const rnd=(lo,hi)=>lo+Math.floor(Math.random()*(hi-lo+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(0,i);[a[i],a[j]]=[a[j],a[i]];}return a;};
+const bs=(v,n)=>(v&((1<<n)-1)).toString(2).padStart(n,'0');
+const sp=s=>s.split('').join(' ');
+const listNorm=s=>{const m=String(s).match(/\d+/g);return m?[...new Set(m.map(Number))].sort((a,b)=>a-b).join(','):'';};
+const tokNorm=s=>(String(s).toLowerCase().replace(/[’‘`´]/g,"'").match(/c'|d'|c|d|0|1/g)||[]).join('|');
+const YN=[['1','1'],['0','0']];
+const NAME={fa:'Tam toplayıcı',padd:'4 bit paralel toplayıcı',sub:'Çıkarma devresi',addsub:'Toplayıcı / çıkarıcı',muxadd:'MUX ile ortak toplayıcı',
+  muxread:'MUX okuma',mux1:'MUX ile fonksiyon (2ⁿ:1)',mux2:'MUX ile fonksiyon (2ⁿ⁻¹:1)',muxbig:'Büyük MUX kurma',muxcount:'MUX sayma'};
+const W={fa:1,padd:1.4,sub:1.4,addsub:1,muxadd:.8,muxread:1,mux1:1,mux2:1.4,muxbig:1,muxcount:.8};
+/* ---- adder core ---- */
+function addN(a,b,cin,n){const c=[cin];let s=0;for(let i=0;i<n;i++){const t=((a>>i)&1)+((b>>i)&1)+c[i];s|=(t&1)<<i;c[i+1]=t>>1;}return{s,c,cout:c[n]};}
+/* ---- mux core ---- */
+const muxOut=(I,sel)=>I[sel];
+/* F with truth vector tv over vars [A,B,C(,D)]: data inputs of a 2^(n-1):1 mux (selects = first n-1 vars) in {0,1,L,L'} */
+function mux2Inputs(tv,n){
+  const out=[];
+  for(let i=0;i<tv.length/2;i++){
+    const f0=tv[2*i],f1=tv[2*i+1];
+    out.push(f0===f1?String(f0):(f0===0&&f1===1?'L':"L'"));
+  }
+  return out;
+}
+const LASTV=n=>n===3?'C':'D';
+const mkTV=(n,ones)=>Array.from({length:1<<n},(_,i)=>ones.includes(i)?1:0);
+function genFA(){
+  const half=Math.random()<.3,a=rnd(0,1),b=rnd(0,1),c=half?0:rnd(0,1),t=a+b+c;
+  return{type:'fa',task:half?'Yarı toplayıcı (half adder): girişler a ve b. Toplam s ve elde c çıkışlarını bul.':'Tam toplayıcı (full adder): girişler a, b ve cin. Toplam s ve elde cout çıkışlarını bul.',
+    stmt:half?`a = ${a}, b = ${b}`:`a = ${a}, b = ${b}, cin = ${c}`,
+    fields:[{k:'s',label:'s (toplam)',kind:'choice',opts:YN},{k:'c',label:half?'c (elde)':'cout',kind:'choice',opts:YN}],
+    answer:{s:String(t&1),c:String(t>>1)},
+    hints:['Aritmetik toplama yap: a + b'+(half?'':' + cin')+' sonucunu ikilik yaz.','Sonucun en sağ biti s, soldaki biti elde (carry) olur.',half?'s = a ⊕ b, c = a·b':'s = a ⊕ b ⊕ cin, cout = ab + a·cin + b·cin'],
+    solution:[`${a} + ${b}${half?'':' + '+c} = ${t} = ${bs(t,2)}₂.`,`s = ${t&1}, ${half?'c':'cout'} = ${t>>1}.`]};
+}
+function genPadd(){
+  const n=4,a=rnd(0,15),b=rnd(0,15),cin=Math.random()<.3?1:0,r=addN(a,b,cin,n);
+  const cs=[1,2,3,4].map(i=>r.c[i]).join('');
+  return{type:'padd',task:'4 bitlik paralel toplayıcıda (4 adet tam toplayıcı) elde zincirini ve sonucu bul. c1, c2, c3 sırasıyla FA0, FA1, FA2\'nin elde çıkışıdır, c4 = cout.',
+    stmt:`A = ${bs(a,4)} (A3A2A1A0)\nB = ${bs(b,4)} (B3B2B1B0)\ncin (c0) = ${cin}`,
+    fields:[{k:'c',label:'c1 c2 c3 c4',ph:'4 bit, örn. 0110'},{k:'s',label:'S3 S2 S1 S0',ph:'4 bit'}],
+    answer:{c:cs,s:bs(r.s,4)},
+    hints:['Sağdan başla: FA0, a0 + b0 + cin toplar. Elde bir soldaki FA\'nın cin\'i olur.','Her sütunda üç biti topla (a, b, gelen elde). Sonuç 0-1 ise elde 0, 2-3 ise elde 1.','c4 son FA\'nın elde çıkışıdır (cout).'],
+    solution:[`Sütun sütun: c0 = ${cin}; c1..c4 = ${sp(cs)}.`,`Toplam bitleri S3..S0 = ${bs(r.s,4)}, cout = c4 = ${r.cout}.`,`Kontrol: ${a} + ${b} + ${cin} = ${a+b+cin}.`]};
+}
+function genSub(){
+  const n=4,a=rnd(0,15),b=rnd(0,15),nb=(~b)&15,r=addN(a,nb,1,n);
+  return{type:'sub',task:'4 bitlik çıkarma devresi, S = A − B, A + (B\' + 1) olarak yapılır. B\'nin bitleri tersleniyor ve cin = 1. B\' bitlerini, S\'yi, cout\'u ve borrow durumunu bul.',
+    stmt:`A = ${bs(a,4)}\nB = ${bs(b,4)}\ncin = 1`,
+    fields:[{k:'nb',label:'B\' (terslenmiş B)',ph:'4 bit'},{k:'s',label:'S3..S0',ph:'4 bit'},{k:'c',label:'cout',kind:'choice',opts:YN},{k:'bw',label:'Borrow (ödünç)',kind:'choice',opts:[['1','Var'],['0','Yok']]}],
+    answer:{nb:bs(nb,4),s:bs(r.s,4),c:String(r.cout),bw:String(1-r.cout)},
+    hints:['B\' = B\'nin her bitinin tersi. 2\'ye tümleyen için +1 devrenin cin girişinden gelir.','S = A + B\' + 1 işlemini toplayıcıyla yap.','Slayt kuralı: cout = 0 ise borrow var (A < B), cout = 1 ise borrow yok (A ≥ B).'],
+    solution:[`B\' = ${bs(nb,4)}.`,`A + B\' + 1 = ${bs(a,4)} + ${bs(nb,4)} + 1 = ${bs(r.s,4)}, cout = ${r.cout}.`,r.cout?'cout = 1 olduğundan borrow yok, A ≥ B.':'cout = 0 olduğundan borrow var, A < B.']};
+}
+function genAddSub(){
+  const a=rnd(0,15),b=rnd(0,15),x=rnd(0,1),bx=x?(~b)&15:b,r=addN(a,bx,x,4);
+  return{type:'addsub',task:'Toplayıcı/çıkarıcı devresi: B girişi XOR kapılarından geçip toplayıcıya gider, cin = X. X = 0 iken S = A + B, X = 1 iken S = A − B olur. Verilen değerlerde toplayıcının B girişini, S\'yi ve cout\'u bul.',
+    stmt:`X = ${x}\nA = ${bs(a,4)}\nB = ${bs(b,4)}`,
+    fields:[{k:'bx',label:'Toplayıcının B girişi (B ⊕ X)',ph:'4 bit'},{k:'s',label:'S3..S0',ph:'4 bit'},{k:'c',label:'cout',kind:'choice',opts:YN}],
+    answer:{bx:bs(bx,4),s:bs(r.s,4),c:String(r.cout)},
+    hints:['XOR kapısı: 0 ⊕ b = b (tamponlar), 1 ⊕ b = b\' (ters çevirir).','Toplayıcı: S = A + (B ⊕ X) + X.'],
+    solution:[`B ⊕ X = ${bs(bx,4)}${x?' (X=1, her bit terslendi)':' (X=0, B aynen)'}.`,`S = ${bs(a,4)} + ${bs(bx,4)} + ${x} = ${bs(r.s,4)}, cout = ${r.cout}.`]};
+}
+function genMuxAdd(){
+  const X=rnd(0,15),Y=rnd(0,15),Wv=rnd(0,15),Z=rnd(0,15),sa=rnd(0,1),sb=rnd(0,1);
+  const A=sa?Y:X,B=sb?Z:Wv,r=addN(A,B,0,4),nm=(sa?'Y':'X')+' + '+(sb?'Z':'W');
+  return{type:'muxadd',task:'4 bitlik tek bir toplayıcının A girişi 2:1 MUX1 ile (Sa=0 → X, Sa=1 → Y), B girişi 2:1 MUX2 ile (Sb=0 → W, Sb=1 → Z) seçiliyor. Verilen seçici değerlerinde hangi iki sayı toplanır, sonuç ve cout nedir?',
+    stmt:`X = ${bs(X,4)}, Y = ${bs(Y,4)}\nW = ${bs(Wv,4)}, Z = ${bs(Z,4)}\nSa = ${sa}, Sb = ${sb}`,
+    fields:[{k:'p',label:'Toplanan çift',kind:'choice',opts:[['X + W','X+W'],['X + Z','X+Z'],['Y + W','Y+W'],['Y + Z','Y+Z']]},{k:'s',label:'S3..S0',ph:'4 bit'},{k:'c',label:'cout',kind:'choice',opts:YN}],
+    answer:{p:nm,s:bs(r.s,4),c:String(r.cout)},
+    hints:['Sa, A girişini (X ya da Y); Sb, B girişini (W ya da Z) seçer.','Seçilen iki sayıyı topla.'],
+    solution:[`Sa=${sa} → ${sa?'Y':'X'}, Sb=${sb} → ${sb?'Z':'W'}: ${nm}.`,`${bs(A,4)} + ${bs(B,4)} = ${bs(r.s,4)}, cout = ${r.cout}.`]};
+}
+function genMuxRead(ctl){
+  const k=pick([4,8]),ns=k===4?2:3,I=Array.from({length:k},()=>rnd(0,1));
+  if(Math.random()<.5){
+    const sel=rnd(0,k-1),S=bs(sel,ns);
+    return{type:'muxread',task:`${k}:1 MUX: veri girişleri I0…I${k-1} ve seçici girişleri (${ns===2?'S1 S0':'S2 S1 S0'}) verilmiş. Z çıkışı kaçtır?`,
+      stmt:`I = ${I.map((v,i)=>`I${i}=${v}`).join(' ')}\n${ns===2?'S1 S0':'S2 S1 S0'} = ${sp(S)}`,
+      fields:[{k:'z',label:'Z',kind:'choice',opts:YN}],answer:{z:String(I[sel])},
+      hints:['Seçicinin ikilik değerini ondalığa çevir: bu numaralı giriş çıkışa bağlanır.'],
+      solution:[`${S}₂ = ${sel}. Seçilen giriş I${sel} = ${I[sel]}.`,`Z = ${I[sel]}.`]};
+  }
+  const vars=ns===2?'A,B':'A,B,C',ones=I.map((v,i)=>v?i:-1).filter(i=>i>=0);
+  if(ones.length===0||ones.length===k)return genMuxRead(ctl);
+  return{type:'muxread',task:`${k}:1 MUX'ın seçici girişlerine ${vars} değişkenleri (A en anlamlı) bağlı, veri girişleri sabit 0/1'e bağlı. Z = F(${vars}) fonksiyonunun Σm listesini yaz.`,
+    stmt:I.map((v,i)=>`I${i}=${v}`).join('  '),fields:[{k:'sm',label:'Σm listesi',ph:'örn. 1, 4, 6',norm:listNorm}],answer:{sm:ones.join(', ')},
+    hints:['Seçici değeri i iken Z = Ii. Yani Ii = 1 olan her i, bir mintermdir.'],solution:[`Ii = 1 olanlar: ${ones.join(', ')}.`,`F = Σm(${ones.join(', ')}).`]};
+}
+function genMux1(ctl){
+  const n=ctl.n===4?3:3,N=1<<n,ones=[...new Set(Array.from({length:rnd(2,5)},()=>rnd(0,N-1)))].sort((a,b)=>a-b);
+  if(ones.length<2)return genMux1(ctl);
+  const tv=mkTV(n,ones);
+  return{type:'mux1',task:'F(A,B,C) fonksiyonunu yalnızca bir 8:1 MUX ile (başka kapı yok) gerçekle. A, B, C seçici girişlere (A = S2) bağlı. Veri girişlerinin I0 … I7 değerlerini yaz.',
+    stmt:`F(A,B,C) = Σm(${ones.join(', ')})`,fields:[{k:'i',label:'I0 I1 I2 I3 I4 I5 I6 I7',ph:'8 bit'}],answer:{i:tv.join('')},
+    hints:['Her seçici değeri bir satırdır: Ii, F\'nin i. satırdaki değeridir.','F=1 olan satırların girişi 1, diğerleri 0.'],
+    solution:['Ii = F(i). Σm listesindeki numaralar 1, kalanlar 0.',`I0…I7 = ${tv.join(' ')}.`]};
+}
+function genMux2(ctl){
+  const n=ctl.n===4?4:3,N=1<<n;let ones;
+  do{ones=[...new Set(Array.from({length:rnd(3,N/2+1)},()=>rnd(0,N-1)))].sort((a,b)=>a-b);}while(ones.length<2);
+  const tv=mkTV(n,ones),L=LASTV(n),inp=mux2Inputs(tv,n).map(v=>v.replace('L',L)),sel=n===3?'A, B':'A, B, C',k=N/2;
+  return{type:'mux2',task:`F fonksiyonunu ${k}:1 MUX ve gerekirse bir NOT kapısıyla gerçekle. ${sel} değişkenleri seçici girişlerde, ${L} ise veri girişlerinde kullanılacak. Her veri girişi 0, 1, ${L} ya da ${L}' olur. I0'dan I${k-1}'e sırayla yaz.`,
+    stmt:`F(${n===3?'A,B,C':'A,B,C,D'}) = Σm(${ones.join(', ')})`,fields:[{k:'i',label:`I0 … I${k-1} (virgülle)`,ph:`örn. 0, ${L}, ${L}', 1`,norm:s=>tokNorm(s)}],
+    answer:{i:inp.join(', ')},
+    hints:[`Seçici değeri i iken satırlar 2i ve 2i+1'dir (${L}=0 ve ${L}=1).`,`Her satır çiftine bak: iki satır da 0 ise 0, ikisi de 1 ise 1, (0,1) ise ${L}, (1,0) ise ${L}'.`],
+    solution:inp.map((v,i)=>`I${i}: satır ${2*i} → ${tv[2*i]}, satır ${2*i+1} → ${tv[2*i+1]}  ⇒  ${v}`).concat([`Cevap: ${inp.join(', ')}.`])};
+}
+function genMuxBig(){
+  const v=pick(['a','b','c']);
+  if(v==='a'){const m=pick([2,4]),k=m===2?pick([4,8,16]):16,cnt=(k-1)/(m-1);
+    return{type:'muxbig',task:`Yalnızca ${m}:1 MUX'lar kullanarak bir ${k}:1 MUX kuruyorsun. Kaç tane ${m}:1 MUX gerekir?`,stmt:`${k}:1 MUX = ? adet ${m}:1 MUX`,fields:[{k:'n',label:'MUX sayısı',ph:'sayı'}],answer:{n:String(cnt)},
+      hints:['Ağaç yapısı: ilk katman k/m MUX, sonra çıkışları yine birleştirirsin.'],solution:[`Her katmanda giriş sayısı ${m} kat azalır. Toplam (${k} − 1) / (${m} − 1) = ${cnt}.`]};}
+  if(v==='b')return{type:'muxbig',task:'8:1 MUX\'ı 4:1 ve 2:1 MUX\'larla (en az sayıda) kur. Kaç tane 4:1 ve kaç tane 2:1 MUX gerekir?',stmt:'8:1 MUX = a × 4:1 + b × 2:1',
+    fields:[{k:'a',label:'4:1 MUX sayısı',ph:'sayı'},{k:'b',label:'2:1 MUX sayısı',ph:'sayı'}],answer:{a:'2',b:'1'},
+    hints:['8 girişi 4+4 olarak iki 4:1 MUX\'a böl. İkisinin çıkışından birini seçmek için ne gerekir?'],solution:['İki 4:1 MUX 8 girişi kapsar (I0-I3 ve I4-I7).','Çıkışlarından birini S2 ile seçen bir 2:1 MUX eklenir.','Toplam 2 × 4:1 + 1 × 2:1.']};
+  const n=pick([2,3,4,8]),m=pick([2,4]);
+  return{type:'muxbig',task:`${m} adet ${n} bitlik veri sözcüğünden birini seçen bir devre yapılacak (seçici hatları ortak). ${m}:1 MUX'lardan kaç tane paralel bağlanır?`,stmt:`n = ${n} bit, ${m} sözcük`,
+    fields:[{k:'n',label:'MUX sayısı',ph:'sayı'}],answer:{n:String(n)},hints:['Her bit için bir MUX gerekir. Seçici hatları kısa devre edilir.'],solution:[`Her bit konumu için bir ${m}:1 MUX: ${n} adet.`]};
+}
+function genMuxCount(){
+  const n=rnd(2,5),k=1<<n,v=pick(['sel','lit','vars']);
+  if(v==='sel')return{type:'muxcount',task:`Bir ${k}:1 MUX'ta kaç seçici (select) girişi vardır?`,stmt:`${k}:1 MUX`,fields:[{k:'n',label:'Seçici sayısı',ph:'sayı'}],answer:{n:String(n)},hints:['k = 2ⁿ ise n seçici girişi vardır.'],solution:[`${k} = 2^${n} → ${n} seçici.`]};
+  if(v==='lit')return{type:'muxcount',task:`${n} değişkenli bir fonksiyonu tek bir MUX ve başka kapı kullanmadan gerçeklemek için kaç veri girişli MUX gerekir? (Değişkenlerin hepsi seçici girişlerine bağlanır.)`,stmt:`n = ${n}`,fields:[{k:'n',label:'MUX boyutu (k:1 için k)',ph:'sayı'}],answer:{n:String(k)},hints:['n değişken için 2ⁿ satır var. Her satır bir veri girişidir.'],solution:[`2^${n} = ${k}: ${k}:1 MUX.`]};
+  return{type:'muxcount',task:`${n} değişkenli bir fonksiyonu, bir NOT kapısı kullanarak en küçük MUX ile gerçekliyorsun. Hangi boyutta MUX (k:1 için k) gerekir? (n−1 değişken seçiciye, kalan değişken ya da tümleyeni/0/1 veri girişlerine gider.)`,stmt:`n = ${n}`,fields:[{k:'n',label:'MUX boyutu (k:1 için k)',ph:'sayı'}],answer:{n:String(k/2)},hints:['Seçici sayısı n − 1.'],solution:[`Seçici sayısı ${n-1} → 2^${n-1} = ${k/2}: ${k/2}:1 MUX.`]};
+}
+const GEN={fa:genFA,padd:genPadd,sub:genSub,addsub:genAddSub,muxadd:genMuxAdd,muxread:genMuxRead,mux1:genMux1,mux2:genMux2,muxbig:genMuxBig,muxcount:genMuxCount};
+function gen(type,ctl){return GEN[type](ctl||{n:3});}
+if(typeof module!=='undefined'){module.exports={gen,NAME,W,addN,mux2Inputs,listNorm,tokNorm,GEN};return;}
+Pages.comb=Qz.make({id:'comb',types:NAME,weights:W,gen,ctl:[{key:'n',label:'MUX ile fonksiyon: değişken sayısı',opts:[[3,'3 değişken'],[4,'4 değişken']],def:3}]});
 })();
 
 </script>
