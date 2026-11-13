@@ -4516,6 +4516,213 @@ Pages.comb=Qz.make({id:'comb',types:NAME,weights:W,gen,ctl:[{key:'n',label:'MUX 
 
 </script>
 <script>
+/* ---- Chapter 8: latch, flip-flop, register, shift register ---- */
+(function(){
+'use strict';
+const rnd=(lo,hi)=>lo+Math.floor(Math.random()*(hi-lo+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(0,i);[a[i],a[j]]=[a[j],a[i]];}return a;};
+const FFN={D:'D flip-flop',T:'T flip-flop',JK:'J-K flip-flop',SR:'S-R flip-flop'};
+const NAME={nextq:'Sonraki durum Q(t+1)',ffseq:'Flip-flop dizisi',latch:'Latch dalga biçimi',excite:'Uyarma (excitation) girişleri',conv:'Flip-flop dönüşümü',shift:'Kaydırmalı yazmaç',timing:'Süre hesapları',concept:'Latch / flip-flop kavramları'};
+const W={nextq:1.2,ffseq:1.4,latch:1.2,excite:1.6,conv:1,shift:1.2,timing:.9,concept:1.2};
+/* next-state functions; inputs as ints */
+const NEXT={D:(q,i)=>i.D,T:(q,i)=>i.T^q,JK:(q,i)=>(i.J&(1-q))|((1-i.K)&q),SR:(q,i)=>i.S|((1-i.R)&q)};
+const legal=(t,i)=>!(t==='SR'&&i.S&&i.R);
+function randIn(t){let i;do{i={};if(t==='D')i.D=rnd(0,1);else if(t==='T')i.T=rnd(0,1);else if(t==='JK'){i.J=rnd(0,1);i.K=rnd(0,1);}else{i.S=rnd(0,1);i.R=rnd(0,1);}}while(!legal(t,i));return i;}
+const inStr=i=>Object.keys(i).map(k=>`${k}=${i[k]}`).join(', ');
+const CHAR={D:'Q(t+1) = D',T:'Q(t+1) = T ⊕ Q(t)',JK:"Q(t+1) = J·Q(t)' + K'·Q(t)",SR:"Q(t+1) = S + R'·Q(t)   (SR = 0)"};
+function genNextQ(){
+  const t=pick(['D','T','JK','SR']),q=rnd(0,1),i=randIn(t),n=NEXT[t](q,i);
+  return{type:'nextq',task:`Kenar tetiklemeli ${FFN[t]}: saat darbesi geldiğinde Q(t+1) kaç olur?`,stmt:`Q(t) = ${q}\n${inStr(i)}\n${CHAR[t]}`,
+    fields:[{k:'q',label:'Q(t+1)',kind:'choice',opts:[['0','0'],['1','1']]}],answer:{q:String(n)},
+    hints:['Karakteristik denklemi kullan.',t==='JK'?'J=K=0 korur, J=1 K=0 set, J=0 K=1 reset, J=K=1 tersler.':t==='T'?'T=0 korur, T=1 tersler.':t==='SR'?'S=1 set, R=1 reset, ikisi de 0 ise korur.':'D, bir sonraki duruma aynen yazılır.'],
+    solution:[`${CHAR[t]} → Q(t+1) = ${n}.`]};
+}
+function genFFSeq(){
+  const t=pick(['D','T','JK','SR']),N=8;let q=rnd(0,1);const q0=q,ins=[],out=[];
+  for(let k=0;k<N;k++){const i=randIn(t);ins.push(i);q=NEXT[t](q,i);out.push(q);}
+  const rows=Object.keys(ins[0]).map(k=>`${k}: ${ins.map(i=>i[k]).join(' ')}`).join('\n');
+  return{type:'ffseq',task:`Kenar tetiklemeli ${FFN[t]}. Başlangıçta Q = ${q0}. Her saat kenarında girişler aşağıdaki sırayla uygulanıyor. Her kenardan sonraki Q değerlerini yaz (8 bit, soldan sağa).`,
+    stmt:rows+`\n${CHAR[t]}`,fields:[{k:'o',label:'Q (8 bit)',ph:'8 bit'}],answer:{o:out.join('')},
+    hints:['Her kenarda önceki Q ve o kenardaki girişlerle Q(t+1)\'i bul. Sonuç bir sonraki kenarın Q(t)\'si olur.'],
+    solution:[`Q(0) = ${q0}.`,...ins.map((i,k)=>`${k+1}. kenar: ${inStr(i)} → Q = ${out[k]}`)]};
+}
+function genLatch(){
+  const N=10,kind=pick(['d','sr']);let q=rnd(0,1);const q0=q;
+  if(kind==='d'){const E=[],D=[],o=[];for(let k=0;k<N;k++){const e=Math.random()<.55?1:0,d=rnd(0,1);E.push(e);D.push(d);if(e)q=d;o.push(q);}
+    return{type:'latch',task:`D latch (E = 1 iken D'yi yazar, E = 0 iken durumu korur). Başlangıçta Q = ${q0}. Her zaman biriminde Q değerini yaz (10 bit). Gecikmeleri yok say.`,stmt:`E: ${E.join(' ')}\nD: ${D.join(' ')}`,
+      fields:[{k:'o',label:'Q (10 bit)',ph:'10 bit'}],answer:{o:o.join('')},hints:['E = 1 olan birimlerde Q = D. E = 0 olan birimlerde önceki Q korunur.'],solution:['E=1: Q = D. E=0: Q korunur.',`Q = ${o.join('')}`]};}
+  const S=[],R=[],o=[];for(let k=0;k<N;k++){let s,r;do{s=Math.random()<.3?1:0;r=Math.random()<.3?1:0;}while(s&&r);S.push(s);R.push(r);q=s?1:r?0:q;o.push(q);}
+  return{type:'latch',task:`NOR kapılı S-R latch (S = 1 set, R = 1 reset, S = R = 0 korur; S = R = 1 hiç uygulanmıyor). Başlangıçta Q = ${q0}. Her zaman biriminde Q değerini yaz (10 bit). Gecikmeleri yok say.`,stmt:`S: ${S.join(' ')}\nR: ${R.join(' ')}`,
+    fields:[{k:'o',label:'Q (10 bit)',ph:'10 bit'}],answer:{o:o.join('')},hints:['S=1 → Q=1, R=1 → Q=0, ikisi de 0 → önceki Q.'],solution:[`Q = ${o.join('')}`]};
+}
+/* required inputs for Q -> Q+ */
+const EXC={D:(q,n)=>({D:String(n)}),T:(q,n)=>({T:String(q^n)}),
+  JK:(q,n)=>q===0?{J:String(n),K:'x'}:{J:'x',K:String(1-n)},
+  SR:(q,n)=>q===0?(n?{S:'1',R:'0'}:{S:'0',R:'x'}):(n?{S:'x',R:'0'}:{S:'0',R:'1'})};
+function genExcite(){
+  const t=pick(['D','T','JK','SR']),q=rnd(0,1),n=rnd(0,1),e=EXC[t](q,n);
+  return{type:'excite',task:`${FFN[t]} için Q(t) = ${q} durumundan Q(t+1) = ${n} durumuna geçiş istiyoruz. Gerekli giriş değerlerini yaz (önemsiz ise x yaz).`,stmt:`Q: ${q} → ${n}`,
+    fields:Object.keys(e).map(k=>({k,label:k,kind:'choice',opts:[['0','0'],['1','1'],['x','x']]})),answer:e,
+    hints:['Karakteristik denklemde Q(t) ve Q(t+1) değerlerini yerine koy; hangi giriş değerleri bu geçişi sağlıyor?','x (önemsiz): girişin değeri geçişi etkilemiyorsa.'],
+    solution:[CHAR[t]+'.',`Gerekli girişler: ${Object.keys(e).map(k=>`${k} = ${e[k]}`).join(', ')}.`]};
+}
+const CONV=[
+  ['D flip-flop kullanarak T flip-flop yapmak için D girişi ne olmalı?',[['a',"D = T ⊕ Q"],['b','D = T'],['c',"D = T·Q"]],'a','T ⊕ Q: T=0 ise D=Q (korur), T=1 ise D=Q\' (tersler).'],
+  ['J-K flip-flop\'tan T flip-flop yapmak için J ve K nasıl bağlanır?',[['a','J = K = T'],['b',"J = T, K = T'"],['c','J = K = 1']],'a','J=K=T: T=0 korur, T=1 tersler.'],
+  ['J-K flip-flop\'tan D flip-flop yapmak için J ve K nasıl bağlanır?',[['a',"J = D, K = D'"],['b','J = K = D'],['c',"J = D', K = D"]],'a','J=D, K=D\': D=1 → set, D=0 → reset.'],
+  ['S-R flip-flop\'tan D flip-flop yapmak için S ve R nasıl bağlanır?',[['a',"S = D, R = D'"],['b','S = R = D'],['c',"S = D', R = D"]],'a','S=D, R=D\' hiçbir zaman ikisi birden 1 olmaz.'],
+  ['T flip-flop\'ta T = 1 sabitse her saat kenarında ne olur?',[['a','Q tersleniyor (toggle)'],['b','Q korunuyor'],['c','Q = 1 oluyor']],'a','Q(t+1) = 1 ⊕ Q = Q\'.']
+];
+function genConv(){const [t,o,a,why]=pick(CONV);return{type:'conv',task:t,stmt:'',fields:[{k:'c',label:'Cevap',kind:'choice',opts:o}],answer:{c:a},hints:['Karakteristik denklemleri karşılaştır.'],solution:[why]};}
+function genShift(){
+  const dir=pick(['sol','sağ']),n=4,N=rnd(2,4);let st=Array.from({length:n},()=>rnd(0,1));const init=st.join(''),ser=Array.from({length:N},()=>rnd(0,1));
+  const hist=[init];
+  ser.forEach(b=>{st=dir==='sol'?st.slice(1).concat([b]):[b].concat(st.slice(0,n-1));hist.push(st.join(''));});
+  return{type:'shift',task:`4 bitlik, seri girişli ${dir} kaydırmalı yazmaç (Z3 Z2 Z1 Z0). Her saat kenarında veri bir bit ${dir==='sol'?'sola (Z0\'a seri bit girer, Z3 çıkar)':'sağa (Z3\'e seri bit girer, Z0 çıkar)'} kayar. ${N} saat kenarından sonra yazmacın içeriğini yaz.`,
+    stmt:`Başlangıç Z3Z2Z1Z0 = ${init}\nSeri girişler (sırayla): ${ser.join(' ')}`,fields:[{k:'z',label:'Z3 Z2 Z1 Z0',ph:'4 bit'}],answer:{z:st.join('')},
+    hints:[dir==='sol'?'Sola kaydırmada en soldaki bit atılır, yeni bit sağdan girer.':'Sağa kaydırmada en sağdaki bit atılır, yeni bit soldan girer.'],solution:hist.map((h,i)=>i===0?`Başlangıç: ${h}`:`${i}. kenar (seri ${ser[i-1]}): ${h}`)};
+}
+function genTiming(){
+  const v=pick(['tpw','per','freq']);
+  if(v==='tpw'){const a=rnd(5,40),b=rnd(5,40);return{type:'timing',task:`Bir S-R latch'te tpLH(SQ) = ${a} ns ve tpHL(RQ) = ${b} ns. S ya da R darbesinin en az ne kadar sürmesi gerekir? (tpW(min) = en kötü durum)`,stmt:'',fields:[{k:'t',label:'tpW(min) (ns)',ph:'sayı'}],answer:{t:String(Math.max(a,b))},hints:['En uzun gecikmeyi seç.'],solution:[`tpW(min) = max(${a}, ${b}) = ${Math.max(a,b)} ns.`]};}
+  const h=rnd(2,9)*5,l=rnd(2,9)*5;
+  if(v==='per')return{type:'timing',task:`Saat işaretinin yüksek seviyede kalma süresi tH = ${h} ns, alçak seviyede kalma süresi tL = ${l} ns. Saat periyodu tPER kaç ns'dir?`,stmt:'',fields:[{k:'t',label:'tPER (ns)',ph:'sayı'}],answer:{t:String(h+l)},hints:['tPER = tH + tL.'],solution:[`${h} + ${l} = ${h+l} ns.`]};
+  const per=pick([10,20,25,40,50,100]);
+  return{type:'timing',task:`Saat işaretinin periyodu ${per} ns. Frekansı kaç MHz'dir?`,stmt:'',fields:[{k:'f',label:'f (MHz)',ph:'sayı'}],answer:{f:String(1000/per)},hints:['f = 1 / T. 1 / (T ns) = 1000 / T MHz.'],solution:[`f = 1000 / ${per} = ${1000/per} MHz.`]};
+}
+const MC=[
+  ['Latch ile flip-flop arasındaki temel fark nedir?',[['a','Flip-flop saat işaretiyle tetiklenir, latch saat gerektirmez'],['b','Latch saat işaretiyle tetiklenir'],['c','İkisi de kombinezonsal devredir']],'a'],
+  ['S-R latch\'te hangi giriş birleşimi yasaktır (NOR kapılı)?',[['a','S = 1, R = 1'],['b','S = 0, R = 0'],['c','S = 1, R = 0']],'a'],
+  ['Pozitif kenar tetiklemeli flip-flop durumunu ne zaman değiştirir?',[['a','Saatin 0 → 1 geçişinde'],['b','Saat 1 iken sürekli'],['c','Saatin 1 → 0 geçişinde']],'a'],
+  ['Seviye tetiklemeli birim saat 1 iken ne yapar?',[['a','Girişleri işler, çıkışı değişebilir'],['b','Durumunu korur'],['c','Çıkışı kapatır']],'a'],
+  ['Asenkron PR (Preset) girişi neyi yapar?',[['a','Saat ve D\'den bağımsız olarak Q\'yu 1 yapar'],['b','Q\'yu 0 yapar'],['c','Saati durdurur']],'a'],
+  ['Asenkron CLR (Clear) girişi neyi yapar?',[['a','Saat ve D\'den bağımsız olarak Q\'yu 0 yapar'],['b','Q\'yu 1 yapar'],['c','Q\'yu tersler']],'a'],
+  ['J-K flip-flop\'ta J = K = 1 olduğunda ne olur?',[['a','Durum tersine döner (toggle)'],['b','Durum korunur'],['c','Yasak giriş']],'a'],
+  ['n bitlik bir yazmaç (register) kaç flip-flop içerir?',[['a','n'],['b','2n'],['c','2ⁿ']],'a'],
+  ['D latch\'te E = 0 iken çıkış ne olur?',[['a','Önceki değer korunur'],['b','D\'ye eşit olur'],['c','0 olur']],'a']
+];
+function genConcept(){const [t,o,a]=pick(MC);return{type:'concept',task:t,stmt:'',fields:[{k:'c',label:'Cevap',kind:'choice',opts:shuf(o)}],answer:{c:a},hints:['Slayt: latch saat gerektirmez, flip-flop saat ile tetiklenir.'],solution:['Doğru cevap: '+o.find(x=>x[0]===a)[1]+'.']};}
+const GEN={nextq:genNextQ,ffseq:genFFSeq,latch:genLatch,excite:genExcite,conv:genConv,shift:genShift,timing:genTiming,concept:genConcept};
+function gen(type){return GEN[type]();}
+if(typeof module!=='undefined'){module.exports={gen,NAME,W,NEXT,EXC};return;}
+Pages.seqa=Qz.make({id:'seqa',types:NAME,weights:W,gen});
+})();
+
+</script>
+<script>
+/* ---- Chapter 9-10: sıralı devre analizi ve tasarımı (FSM, Mealy/Moore, uyarma tabloları) ---- */
+(function(){
+'use strict';
+const rnd=(lo,hi)=>lo+Math.floor(Math.random()*(hi-lo+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(0,i);[a[i],a[j]]=[a[j],a[i]];}return a;};
+const NAME={fsm:'Durum tablosundan çıkış dizisi',analyze:'Devre analizi (durum tablosu)',excite:'Uyarma girişleri (tasarım)',detect:'Dizi tanıyıcı',count:'Durum ve flip-flop sayısı',concept:'Mealy / Moore kavramları'};
+const W={fsm:1.3,analyze:1.8,excite:1.5,detect:1.2,count:.9,concept:1};
+const bs=(v,n)=>v.toString(2).padStart(n,'0');
+/* ---------- FSM table simulation ---------- */
+function genFsm(){
+  const moore=Math.random()<.4,ns=pick([3,3,4]),S=['A','B','C','D'].slice(0,ns);
+  const nx={},out={};
+  S.forEach(s=>{nx[s]=[pick(S),pick(S)];out[s]=moore?[rnd(0,1)]:[rnd(0,1),rnd(0,1)];});
+  const N=7,xs=Array.from({length:N},()=>rnd(0,1));let s='A',zs=[];const trace=['A'];
+  xs.forEach(x=>{zs.push(moore?null:out[s][x]);s=nx[s][x];trace.push(s);});
+  let ans;
+  if(moore){/* Moore: output after each clock is the output of the state just entered; also initial state output */
+    ans=trace.map(t=>out[t][0]).join('');
+  }else ans=zs.join('');
+  const hdr=moore?'Durum  X=0  X=1  | Z':'Durum  X=0   X=1';
+  const rows=S.map(t=>moore?`${t}      ${nx[t][0]}    ${nx[t][1]}    | ${out[t][0]}`:`${t}      ${nx[t][0]},${out[t][0]}  ${nx[t][1]},${out[t][1]}`);
+  return{type:'fsm',task:moore?`Moore makinesi (çıkış yalnızca duruma bağlı: Z = G(S)). Başlangıç durumu A. X girişleri her saat kenarında sırayla uygulanıyor. Başlangıç durumunun çıkışından başlayarak, her durumda üretilen Z değerlerini yaz (${N+1} bit) ve makinenin son durumunu bul.`:
+      `Mealy makinesi (çıkış duruma ve girişe bağlı). Tablodaki gösterim: sonraki durum, çıkış (S+,Z). Başlangıç durumu A. X girişleri her saat kenarında sırayla uygulanıyor. Her girişe karşılık üretilen Z değerlerini yaz (${N} bit) ve makinenin son durumunu bul.`,
+    stmt:hdr+'\n'+rows.join('\n')+'\nX: '+xs.join(' '),
+    fields:[{k:'z',label:moore?`Z (${N+1} bit)`:`Z (${N} bit)`,ph:moore?`${N+1} bit`:`${N} bit`},{k:'s',label:'Son durum',kind:'choice',opts:S.map(x=>[x,x])}],answer:{z:ans,s:s},
+    hints:[moore?'Moore\'da çıkış durumdan okunur: önce A\'nın çıkışı, sonra her geçişten sonra girilen durumun çıkışı.':'Mealy\'de çıkış, (şimdiki durum, girilen X) hücresinden okunur; aynı hücreden sonraki durum da gelir.','Her adımda tabloya bak: bulunduğun durumun satırı, X\'in sütunu.'],
+    solution:['Durum dizisi: '+trace.join(' → ')+'.',`Z = ${ans}.`]};
+}
+/* ---------- analysis ---------- */
+const VN=['Q1','Q0','X'];
+function randSop(){ /* random SOP over (Q1,Q0,X) as list of terms [{lits:[[var,neg],...]}] */
+  const k=rnd(1,3),terms=[],seen=new Set();
+  while(terms.length<k){const nl=rnd(1,3),vs=shuf([0,1,2]).slice(0,nl).sort(),lits=vs.map(v=>[v,Math.random()<.4]);const key=JSON.stringify(lits);if(seen.has(key))continue;seen.add(key);terms.push(lits);}
+  return terms;
+}
+const evalSop=(t,q1,q0,x)=>{const v=[q1,q0,x];return t.some(l=>l.every(([i,n])=>(n?1-v[i]:v[i])===1))?1:0;};
+const sopStr=t=>t.map(l=>l.map(([i,n])=>VN[i]+(n?"'":'')).join('·')).join(' + ');
+function genAnalyze(){
+  const ff=pick(['D','D','JK','T']);
+  const eqs={};let f=[];
+  if(ff==='D'){eqs.D1=randSop();eqs.D0=randSop();}
+  else if(ff==='T'){eqs.T1=randSop();eqs.T0=randSop();}
+  else{eqs.J1=randSop();eqs.K1=randSop();eqs.J0=randSop();eqs.K0=randSop();}
+  eqs.Z=randSop();
+  const next=(q1,q0,x)=>{
+    const g=k=>evalSop(eqs[k],q1,q0,x);
+    if(ff==='D')return[g('D1'),g('D0')];
+    if(ff==='T')return[q1^g('T1'),q0^g('T0')];
+    const jk=(j,k,q)=>(j&(1-q))|((1-k)&q);return[jk(g('J1'),g('K1'),q1),jk(g('J0'),g('K0'),q0)];
+  };
+  const X=rnd(0,1),states=[[0,0],[0,1],[1,1],[1,0]];
+  const nsx=states.map(([q1,q0])=>next(q1,q0,X).join('')),zs=states.map(([q1,q0])=>evalSop(eqs.Z,q1,q0,X));
+  const ffn={D:'D flip-flop',T:'T flip-flop',JK:'J-K flip-flop'}[ff];
+  return{type:'analyze',task:`Senkron devre ${ffn}'larla kurulmuş (Q1 ve Q0). Flip-flop giriş fonksiyonları ve çıkış fonksiyonu verilmiş (· = AND, + = OR). X = ${X} için, Q1Q0 = 00, 01, 11, 10 durumlarının her biri için sonraki durumu Q1+Q0+ ve çıkış Z'yi bul.`,
+    stmt:Object.keys(eqs).map(k=>`${k} = ${sopStr(eqs[k])}`).join('\n')+`\nX = ${X}`,
+    fields:[{k:'n',label:'Q1+Q0+ (sırayla 00, 01, 11, 10 için: 4 adet 2 bit)',ph:'örn. 01 11 00 10'},{k:'z',label:'Z (4 bit, aynı sırada)',ph:'4 bit'}],
+    answer:{n:nsx.join(' '),z:zs.join('')},
+    hints:[ff==='D'?'D flip-flop: Q+ = D. Giriş fonksiyonunu o durum ve X için değerlendir.':ff==='T'?'T flip-flop: Q+ = T ⊕ Q.':'J-K flip-flop: Q+ = J·Q\' + K\'·Q. Önce J ve K\'yı değerlendir.','Her durum için Q1, Q0 ve X değerlerini yerine koyup fonksiyonları hesapla.'],
+    solution:states.map(([q1,q0],i)=>`Q1Q0 = ${q1}${q0}, X = ${X}: Q1+Q0+ = ${nsx[i]}, Z = ${zs[i]}`)};
+}
+/* ---------- excitation for design ---------- */
+const EXC={D:(q,n)=>({D:String(n)}),T:(q,n)=>({T:String(q^n)}),JK:(q,n)=>q===0?{J:String(n),K:'x'}:{J:'x',K:String(1-n)}};
+function genExcite(){
+  const ff=pick(['D','T','JK']),q=[rnd(0,1),rnd(0,1)],nq=[rnd(0,1),rnd(0,1)],X=rnd(0,1);
+  const fields=[];const ans={};
+  [1,0].forEach((bit,idx)=>{const e=EXC[ff](q[idx],nq[idx]);Object.keys(e).forEach(k=>{fields.push({k:k+bit,label:k+bit,kind:'choice',opts:[['0','0'],['1','1'],['x','x']]});ans[k+bit]=e[k];});});
+  return{type:'excite',task:`Tasarım adımı: durum geçiş tablosunda Q1Q0 = ${q.join('')}, X = ${X} durumundan Q1+Q0+ = ${nq.join('')} durumuna geçiş isteniyor. ${ff==='JK'?'J-K':ff} flip-flop kullanılırsa her flip-flopun giriş değerleri ne olmalı? (önemsiz değer için x)`,
+    stmt:`Q1: ${q[0]} → ${nq[0]}\nQ0: ${q[1]} → ${nq[1]}`,fields,answer:ans,
+    hints:['Her flip-flopu ayrı ele al: kendi geçişine (Q → Q+) bak.',ff==='D'?'D = Q+.':ff==='T'?'T = Q ⊕ Q+ (değişiyorsa 1).':'0→0: J=0,K=x. 0→1: J=1,K=x. 1→0: J=x,K=1. 1→1: J=x,K=0.'],
+    solution:[`Q1 geçişi ${q[0]}→${nq[0]}, Q0 geçişi ${q[1]}→${nq[1]}.`,Object.keys(ans).map(k=>`${k} = ${ans[k]}`).join(', ')+'.']};
+}
+/* ---------- sequence detector ---------- */
+function genDetect(){
+  const pat=pick(['11','101','110','010','1001','011']),len=pat.length,overlap=Math.random()<.6,N=12;
+  const xs=Array.from({length:N},()=>rnd(0,1));let z='',cur='',last=-1;
+  for(let i=0;i<N;i++){
+    const w=xs.slice(Math.max(0,i-len+1),i+1).join('');
+    let hit=w===pat&&i>=len-1;
+    if(hit&&!overlap&&i-last<len)hit=false;
+    if(hit)last=i;z+=hit?1:0;
+  }
+  return{type:'detect',task:`Mealy dizi tanıyıcı: giriş X'te "${pat}" dizisi (soldan sağa, her saat kenarında bir bit) görülür görülmez çıkış Z = 1 olur. ${overlap?'Örtüşmeye izin verilir (bir tanıma sonundaki bitler yeni tanımanın başında kullanılabilir).':'Örtüşmeye izin verilmez (bir tanımadan sonra bitler yeniden sayılmaya başlar).'} Aşağıdaki girişe karşılık Z dizisini yaz.`,
+    stmt:`X: ${xs.join(' ')}`,fields:[{k:'z',label:`Z (${N} bit)`,ph:`${N} bit`}],answer:{z},
+    hints:['Her saat kenarında son '+len+' girişe bak: dizi eşleşiyorsa Z = 1.',overlap?'Örtüşmede aynı bitler iki tanımaya birden katılabilir.':'Örtüşmesiz: tanımadan sonra tamponu sıfırla.'],
+    solution:[`Girişler: ${xs.join('')}.`,`Dizi "${pat}" ${overlap?'(örtüşmeli)':'(örtüşmesiz)'}: Z = ${z}.`]};
+}
+function genCount(){
+  const v=pick(['ff','st','cnt','det']);
+  if(v==='ff'){const n=rnd(3,12),m=Math.ceil(Math.log2(n));return{type:'count',task:`${n} durumlu bir FSM'i flip-flop'larla gerçekleştirmek için en az kaç flip-flop gerekir?`,stmt:`n = ${n} durum`,fields:[{k:'m',label:'Flip-flop sayısı',ph:'sayı'}],answer:{m:String(m)},hints:['m = ⌈log₂ n⌉.'],solution:[`⌈log₂ ${n}⌉ = ${m}.`]};}
+  if(v==='st'){const m=rnd(2,5);return{type:'count',task:`${m} flip-flop ile en fazla kaç farklı durum kodlanabilir?`,stmt:`m = ${m}`,fields:[{k:'n',label:'En fazla durum',ph:'sayı'}],answer:{n:String(1<<m)},hints:['2ᵐ.'],solution:[`2^${m} = ${1<<m}.`]};}
+  if(v==='cnt'){const n=rnd(5,20),m=Math.ceil(Math.log2(n));return{type:'count',task:`Mod-${n} (0'dan ${n-1}'e sayan) senkron bir sayıcı için en az kaç flip-flop gerekir?`,stmt:`mod-${n}`,fields:[{k:'m',label:'Flip-flop sayısı',ph:'sayı'}],answer:{m:String(m)},hints:[`${n} durum: ⌈log₂ ${n}⌉.`],solution:[`⌈log₂ ${n}⌉ = ${m}.`]};}
+  const len=rnd(2,4);return{type:'count',task:`"${'1'.repeat(len)}" dizisini tanıyan, örtüşmeye izinli bir Mealy dizi tanıyıcıda en az kaç durum gerekir? (Başlangıç durumu dahil, hiç 1 görülmemiş durum ilk durumdur.)`,stmt:`dizi uzunluğu ${len}`,fields:[{k:'n',label:'Durum sayısı',ph:'sayı'}],answer:{n:String(len)},
+    hints:['Durumlar: 0, 1, …, len−1 adet ardışık 1 görüldü. Son 1 geldiğinde çıkış 1 olur (Mealy), durum değişmeden kalır.'],solution:[`${len} durum: ${Array.from({length:len},(_,i)=>`${i} adet 1`).join(', ')}.`]};
+}
+const MC=[
+  ['Çıkışı yalnızca mevcut duruma bağlı olan model hangisidir?',[['m','Moore'],['l','Mealy']],'m'],
+  ['Çıkışı hem duruma hem girişe bağlı olan model hangisidir?',[['l','Mealy'],['m','Moore']],'l'],
+  ['Girişin çıkışı hemen (saat kenarından önce) etkilemesi gereken bir tasarım hangi modele uygundur?',[['l','Mealy'],['m','Moore']],'l'],
+  ['Senkron sıralı devrede tüm flip-flop\'lar nasıl tetiklenir?',[['c','Ortak bir saat işaretiyle'],['i','Her biri kendi işaretiyle'],['n','Hiçbiri tetiklenmez']],'c'],
+  ['Hangisi sıralı devrenin sonraki durum fonksiyonudur?',[['h','S+ = H(I, S)'],['g','O = G(I)'],['f','S = F(O)']],'h'],
+  ['Durum azaltmanın amacı nedir?',[['f','En az durumlu, doğru çalışan makine elde etmek'],['m','Flip-flop sayısını artırmak'],['c','Saati hızlandırmak']],'f']
+];
+function genConcept(){const [t,o,a]=pick(MC);return{type:'concept',task:t,stmt:'',fields:[{k:'c',label:'Cevap',kind:'choice',opts:shuf(o)}],answer:{c:a},hints:['Mealy: O = G(I, S). Moore: O = G(S).'],solution:['Doğru cevap: '+o.find(x=>x[0]===a)[1]+'.']};}
+const GEN={fsm:genFsm,analyze:genAnalyze,excite:genExcite,detect:genDetect,count:genCount,concept:genConcept};
+function gen(type){return GEN[type]();}
+if(typeof module!=='undefined'){module.exports={gen,NAME,W,EXC};return;}
+Pages.seqb=Qz.make({id:'seqb',types:NAME,weights:W,gen});
+})();
+
+</script>
+<script>
 /* ---- Chapter 7: zamanlama diyagramları, gecikme, hazard ---- */
 (function(){
 'use strict';
