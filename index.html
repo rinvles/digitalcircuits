@@ -4973,6 +4973,95 @@ Pages.pld=Qz.make({id:'pld',types:NAME,weights:W,gen});
 
 </script>
 <script>
+/* ---- Chapter 11: TTL / CMOS elektriksel özellikler, fanout, gürültü payı, üç durumlu çıkış ---- */
+(function(){
+'use strict';
+const rnd=(lo,hi)=>lo+Math.floor(Math.random()*(hi-lo+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(0,i);[a[i],a[j]]=[a[j],a[i]];}return a;};
+const numNorm=x=>{const v=parseFloat(String(x).replace(',','.'));return isNaN(v)?'':v.toFixed(2);};
+const fmt=v=>String(Math.round(v*100)/100);
+const NAME={fanout:'Fanout hesabı',level:'Mantık seviyesi',noise:'Gürültü payı',cmos:'CMOS kapı çalışması',bus:'Üç durumlu ortak yol',concept:'TTL / CMOS kavramları'};
+const W={fanout:1.6,level:1.2,noise:1.4,cmos:1.2,bus:1,concept:1};
+function genFanout(){
+  const iol=pick([8,16,20,24]),iil=pick([0.4,0.8,1.6,2]),ioh=pick([0.4,0.8,1,2.6]),iih=pick([20,40,50,100]);
+  const fl=Math.floor(iol*1000/(iil*1000)),fh=Math.floor(ioh*1000/iih);
+  return{type:'fanout',task:'Bir TTL kapının çıkışı aynı tür kapıların girişlerini sürüyor. Aşağıdaki akım sınırlarına göre LOW durumu fanout\'unu, HIGH durumu fanout\'unu ve kapının genel fanout\'unu bul. (Genel fanout, ikisinin küçüğüdür.)',
+    stmt:`IOL(max) = ${iol} mA, IIL = ${iil} mA\nIOH(max) = ${ioh} mA, IIH = ${iih} µA`,
+    fields:[{k:'l',label:'Fanout (LOW)',ph:'sayı'},{k:'h',label:'Fanout (HIGH)',ph:'sayı'},{k:'o',label:'Genel fanout',ph:'sayı'}],
+    answer:{l:String(fl),h:String(fh),o:String(Math.min(fl,fh))},
+    hints:['LOW: çıkış, yük girişlerinin IIL akımlarını emer (sink): ΣIIL ≤ IOL(max).','HIGH: çıkış, yük girişlerine IIH akımı verir (source): ΣIIH ≤ IOH(max). Birimleri aynı yap (mA ve µA).','Sonucu aşağı yuvarla (tam sayı kapı).'],
+    solution:[`LOW: ${iol} mA / ${iil} mA = ${iol/iil} → ${fl}.`,`HIGH: ${ioh*1000} µA / ${iih} µA = ${ioh*1000/iih} → ${fh}.`,`Genel fanout = min(${fl}, ${fh}) = ${Math.min(fl,fh)}.`]};
+}
+function genLevel(){
+  if(Math.random()<.5){
+    const v=pick([0.2,0.5,0.7,0.8,0.9,1.2,1.5,1.9,2.0,2.1,2.6,3.4,4.0]),c=v<=0.8?'L':v>=2.0?'H':'U';
+    return{type:'level',task:'Standart TTL girişine şu gerilim uygulanıyor (VCC = 5 V). Kapı bunu nasıl yorumlar? Slayt sınırları: VILmax = 0.8 V, VIHmin = 2.0 V.',stmt:`VIN = ${v} V`,
+      fields:[{k:'c',label:'Yorum',kind:'choice',opts:[['L','LOW (0)'],['H','HIGH (1)'],['U','Tanımsız bölge']]}],answer:{c},
+      hints:['VIN ≤ VILmax → LOW, VIN ≥ VIHmin → HIGH, arada belirsiz.'],solution:[`${v} V: ${c==='L'?'≤ 0.8 V → LOW':c==='H'?'≥ 2.0 V → HIGH':'0.8 ile 2.0 arasında → tanımsız'}.`]};
+  }
+  const vdd=pick([5,3.3,2.5,1.8,1.5]),ih=vdd*0.7,il=vdd*0.3;
+  if(Math.random()<.5)return{type:'level',task:'CMOS ailesinde HIGH girişi için VIH en az VDD\'nin %70\'i olmalıdır. Aşağıdaki besleme gerilimi için VIHmin kaç volttur?',stmt:`VDD = ${vdd} V`,fields:[{k:'v',label:'VIHmin (V)',ph:'örn. 3.5',norm:numNorm}],answer:{v:fmt(ih)},hints:['VIHmin = 0.7 × VDD.'],solution:[`0.7 × ${vdd} = ${fmt(ih)} V.`]};
+  return{type:'level',task:'CMOS ailesinde LOW girişi için VIL en çok VDD\'nin %30\'u olmalıdır. Aşağıdaki besleme gerilimi için VILmax kaç volttur?',stmt:`VDD = ${vdd} V`,fields:[{k:'v',label:'VILmax (V)',ph:'örn. 1.5',norm:numNorm}],answer:{v:fmt(il)},hints:['VILmax = 0.3 × VDD.'],solution:[`0.3 × ${vdd} = ${fmt(il)} V.`]};
+}
+function genNoise(){
+  const fam=pick([{n:'Standart TTL',voh:2.4,vih:2.0,vil:0.8,vol:0.4},{n:'5 V CMOS',voh:4.44,vih:3.5,vil:1.5,vol:0.5},{n:'3.3 V CMOS',voh:2.4,vih:2.31,vil:0.99,vol:0.4},{n:'özel aile',voh:rnd(30,45)/10,vih:rnd(20,28)/10,vil:rnd(7,12)/10,vol:rnd(3,6)/10}]);
+  if(fam.voh<fam.vih)fam.voh=fam.vih+0.4;
+  const nmh=fam.voh-fam.vih,nml=fam.vil-fam.vol;
+  return{type:'noise',task:`${fam.n} için aşağıdaki seviyeler verilmiş. Yüksek seviye gürültü payı NMH = VOHmin − VIHmin ve düşük seviye gürültü payı NML = VILmax − VOLmax değerlerini bul (volt).`,
+    stmt:`VOHmin = ${fam.voh} V, VIHmin = ${fam.vih} V\nVILmax = ${fam.vil} V, VOLmax = ${fam.vol} V`,
+    fields:[{k:'h',label:'NMH (V)',ph:'sayı',norm:numNorm},{k:'l',label:'NML (V)',ph:'sayı',norm:numNorm}],answer:{h:fmt(nmh),l:fmt(nml)},
+    hints:['Gürültü payı, çıkışın garanti ettiği seviye ile girişin kabul ettiği seviye arasındaki farktır.','NMH = VOHmin − VIHmin, NML = VILmax − VOLmax.'],
+    solution:[`NMH = ${fam.voh} − ${fam.vih} = ${fmt(nmh)} V.`,`NML = ${fam.vil} − ${fam.vol} = ${fmt(nml)} V.`]};
+}
+function genCmos(){
+  const v=pick(['out','struct','count']);
+  if(v==='out'){
+    const g=pick(['NAND','NOR']),a=rnd(0,1),b=rnd(0,1),o=g==='NAND'?1-(a&b):1-(a|b);
+    const on=(x,type)=>type==='n'?(x?'açık (ON)':'kapalı (OFF)'):(x?'kapalı (OFF)':'açık (ON)');
+    return{type:'cmos',task:`İki girişli CMOS ${g} kapısı: pull-down ağı nMOS, pull-up ağı pMOS transistorlardan oluşur. nMOS girişi 1 iken, pMOS girişi 0 iken iletir. A = ${a}, B = ${b} iken çıkış Z ne olur?`,stmt:`A = ${a}, B = ${b}`,
+      fields:[{k:'z',label:'Z',kind:'choice',opts:[['1','H (1)'],['0','L (0)']]}],answer:{z:String(o)},
+      hints:[g==='NAND'?'NAND: nMOS\'lar seri, pMOS\'lar paralel. Pull-down yolu ancak ikisi de 1 ise iletir.':'NOR: nMOS\'lar paralel, pMOS\'lar seri. Pull-up yolu ancak ikisi de 0 ise iletir.'],
+      solution:[`A=${a}: nMOS ${on(a,'n')}, pMOS ${on(a,'p')}. B=${b}: nMOS ${on(b,'n')}, pMOS ${on(b,'p')}.`,`${g}(${a},${b}) = ${o}.`]};}
+  if(v==='struct'){
+    const g=pick(['NAND','NOR']),q=pick(['pd','pu']);
+    const ans=(g==='NAND')===(q==='pd')?'s':'p';
+    return{type:'cmos',task:`CMOS ${g} kapısında ${q==='pd'?'pull-down (nMOS)':'pull-up (pMOS)'} ağındaki transistorlar nasıl bağlanır?`,stmt:'',
+      fields:[{k:'c',label:'Bağlantı',kind:'choice',opts:[['s','Seri'],['p','Paralel']]}],answer:{c:ans},
+      hints:['NAND: pull-down ağı seri, pull-up ağı paralel. NOR: tam tersi. İki ağ birbirinin tümleyenidir (seri ↔ paralel).'],solution:[`${g}: ${q==='pd'?'pull-down':'pull-up'} ağı ${ans==='s'?'seri':'paralel'}.`]};}
+  const n=pick([2,3,4]),g=pick(['NAND','NOR']);
+  return{type:'cmos',task:`${n} girişli CMOS ${g} kapısında toplam kaç transistor vardır? (Her giriş için bir nMOS ve bir pMOS.)`,stmt:'',fields:[{k:'n',label:'Transistor sayısı',ph:'sayı'}],answer:{n:String(2*n)},
+    hints:['Her giriş bir nMOS ve bir pMOS bağlar.'],solution:[`${n} giriş × 2 = ${2*n}.`]};
+}
+function genBus(){
+  const n=3,en=Array.from({length:n},()=>rnd(0,1)),d=Array.from({length:n},()=>rnd(0,1));
+  const act=[...Array(n).keys()].filter(i=>en[i]);let ans;
+  if(act.length===0)ans='z';else{const vals=new Set(act.map(i=>d[i]));ans=vals.size>1?'x':String(d[act[0]]);}
+  return{type:'bus',task:'Üç adet üç durumlu (three-state) tampon aynı ortak yola (bus) bağlı. EN = 1 olan tampon girişini yola verir, EN = 0 olan tampon Hi-Z olur. Yolun durumu nedir? (Birden fazla tampon farklı değer sürerse çakışma olur.)',
+    stmt:en.map((e,i)=>`Tampon ${i+1}: EN = ${e}, A = ${d[i]}`).join('\n'),
+    fields:[{k:'b',label:'Yol (bus)',kind:'choice',opts:[['0','0'],['1','1'],['z','Hi-Z (hiçbiri sürmüyor)'],['x','Çakışma']]}],answer:{b:ans},
+    hints:['Etkin (EN = 1) tamponları bul. Hiç yoksa yol yüzer (Hi-Z). Birden fazla etkinse değerlerine bak.'],
+    solution:[`Etkin tamponlar: ${act.length?act.map(i=>i+1).join(', '):'yok'}.`,ans==='z'?'Hiçbiri sürmediği için yol Hi-Z.':ans==='x'?'Etkin tamponlar farklı değer sürüyor: çakışma.':`Yol = ${ans}.`]};
+}
+const MC=[
+  ['Üç durumlu çıkışın üçüncü durumu nedir?',[['z','Yüksek empedans (Hi-Z), çıkış devreye bağlı değilmiş gibi davranır'],['h','Her zaman HIGH'],['l','Her zaman LOW']],'z'],
+  ['TTL\'de garanti edilen çıkış seviyeleri hangileridir?',[['a','VOH ≥ 2.4 V, VOL ≤ 0.4 V'],['b','VOH ≥ 3.5 V, VOL ≤ 1.5 V'],['c','VOH ≥ 2.0 V, VOL ≤ 0.8 V']],'a'],
+  ['CMOS\'ta pMOS transistor ne zaman iletir?',[['a','Gate gerilimi düşükken (VGS ≤ 0 civarı)'],['b','Gate gerilimi yüksekken'],['c','Her zaman']],'a'],
+  ['Bir kapının genel fanout\'u nasıl bulunur?',[['a','LOW ve HIGH fanout\'larının küçüğü'],['b','İkisinin büyüğü'],['c','İkisinin toplamı']],'a'],
+  ['CMOS mantık ailesinde HIGH giriş için en az ne gerekir?',[['a','VDD\'nin %70\'i'],['b','VDD\'nin %30\'u'],['c','VDD\'nin %50\'si']],'a'],
+  ['Standart TTL hangi besleme gerilimiyle çalışır?',[['a','5 V'],['b','3.3 V'],['c','12 V']],'a'],
+  ['MOS transistor kapalıyken (OFF) RDS yaklaşık ne kadardır?',[['a','En az 1 MΩ'],['b','En çok 10 Ω'],['c','Sıfır']],'a'],
+  ['TTL kapının çıkışı LOW iken hangi akım önemlidir?',[['a','Çıkış, yük girişlerinden gelen IIL akımlarını emer (sink)'],['b','Çıkış yüke IIH akımı verir'],['c','Hiçbir akım akmaz']],'a']
+];
+function genConcept(){const [t,o,a]=pick(MC);return{type:'concept',task:t,stmt:'',fields:[{k:'c',label:'Cevap',kind:'choice',opts:shuf(o)}],answer:{c:a},hints:['Slayt: Chapter 11, TTL ve CMOS mantık aileleri.'],solution:['Doğru cevap: '+o.find(x=>x[0]===a)[1]+'.']};}
+const GEN={fanout:genFanout,level:genLevel,noise:genNoise,cmos:genCmos,bus:genBus,concept:genConcept};
+function gen(type){return GEN[type]();}
+if(typeof module!=='undefined'){module.exports={gen,NAME,W,numNorm};return;}
+Pages.ttl=Qz.make({id:'ttl',types:NAME,weights:W,gen});
+})();
+
+</script>
+<script>
 Core.boot();
 
 </script>
